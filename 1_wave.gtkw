@@ -1,0 +1,254 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Tue Jun  7 00:30:45 2022
+[*]
+[dumpfile] "/Users/jamshedashurov/Desktop/CSE148/CSE148/baseline/mips_cpu/simx.fst"
+[dumpfile_mtime] "Mon Jun  6 23:12:25 2022"
+[dumpfile_size] 688491
+[savefile] "/Users/jamshedashurov/Desktop/CSE148/CSE148/baseline/mips_cpu/1_wave.gtkw"
+[timestart] 73862
+[size] 2185 1257
+[pos] 1533 -1
+*-6.000000 74104 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.mips_core.
+[treeopen] TOP.mips_core.AGU.
+[treeopen] TOP.mips_core.COMMIT.
+[treeopen] TOP.mips_core.DECODER.
+[treeopen] TOP.mips_core.FETCH_UNIT.
+[treeopen] TOP.mips_core.ISSUE.
+[treeopen] TOP.mips_core.LOAD_STORE_QUEUE.
+[treeopen] TOP.mips_core.MEM_GLUE.
+[treeopen] TOP.mips_core.REG_FILE.
+[sst_width] 276
+[signals_width] 439
+[sst_expanded] 1
+[sst_vpaned_height] 717
+@100000028
+TOP.mips_core.DECODER.out.alu_ctl[4:0]
+@24
+TOP.mips_core.DECODER.out.valid
+TOP.mips_core.DECODER.out.branch_target[25:0]
+TOP.mips_core.DECODER.out.immediate[31:0]
+TOP.mips_core.DECODER.out.is_branch_jump
+TOP.mips_core.DECODER.out.is_jump
+TOP.mips_core.DECODER.out.is_jump_reg
+TOP.mips_core.DECODER.out.is_mem_access
+TOP.mips_core.DECODER.out.mem_action
+TOP.mips_core.DECODER.out.rs_addr[4:0]
+TOP.mips_core.DECODER.out.rt_addr[4:0]
+TOP.mips_core.DECODER.out.rw_addr[4:0]
+TOP.mips_core.DECODER.out.uses_immediate
+TOP.mips_core.DECODER.out.uses_rs
+TOP.mips_core.DECODER.out.uses_rt
+TOP.mips_core.DECODER.out.uses_rw
+@200
+-
+@24
+TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_active_state.youngest_inst_pointer[7:0]
+TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_commit_state.oldest_inst_pointer[7:0]
+TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_rename_state.free_head_pointer[5:0]
+TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_commit_state.free_tail_pointer[5:0]
+TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_commit_state.branch_read_pointer[6:0]
+TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_branch_state.write_pointer[6:0]
+TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_active_state.global_color_bit
+@22
+TOP.mips_core.LOAD_STORE_QUEUE.curr_rename_state.m_reg_file_valid_bit[63:0]
+TOP.mips_core.COMMIT.next_rename_state.m_reg_file_valid_bit[63:0]
+@24
+TOP.mips_core.REG_FILE.phys_rw[5:0]
+TOP.mips_core.REG_FILE.commit_output_in.reclaim_reg[5:0]
+@200
+-
+@24
+TOP.mips_core.DATA_STRCUTURES_UPDATE.hazard_signal_in.branch_id[7:0]
+TOP.mips_core.DATA_STRCUTURES_UPDATE.hazard_signal_in.branch_miss
+@28
+TOP.mips_core.HAZARD_CONTROLLER.issue_queue_full
+TOP.mips_core.HAZARD_CONTROLLER.dec_stall
+TOP.mips_core.HAZARD_CONTROLLER.if_flush
+TOP.mips_core.HAZARD_CONTROLLER.issue_stall
+TOP.mips_core.HAZARD_CONTROLLER.dec_overload
+@24
+TOP.mips_core.DATA_STRCUTURES_UPDATE.hazard_signal_in.color_bit
+@29
+TOP.mips_core.HAZARD_CONTROLLER.ic_miss
+@28
+TOP.mips_core.HAZARD_CONTROLLER.if_stall
+TOP.mips_core.HAZARD_CONTROLLER.if_flush
+@24
+TOP.mips_core.DATA_STRCUTURES_UPDATE.hazard_signal_in.dc_miss
+@28
+TOP.mips_core.COMMIT.curr_rename_state.branch_decoded_hazard
+@200
+-
+@24
+TOP.mips_core.BRANCH_MISPREDICTION.branch_id_with_ds[7:0]
+TOP.mips_core.BRANCH_MISPREDICTION.color_bit_with_ds
+@200
+-
+-
+-Issue Queue in 
+@28
+#{TOP.mips_core.ISSUE.issue_in.valid[0:1]} TOP.mips_core.ISSUE.issue_in.valid[0] TOP.mips_core.ISSUE.issue_in.valid[1]
+#{TOP.mips_core.ISSUE.issue_in.is_branch[0:1]} TOP.mips_core.ISSUE.issue_in.is_branch[0] TOP.mips_core.ISSUE.issue_in.is_branch[1]
+@24
+TOP.mips_core.ISSUE.issue_in.active_list_id[0][7:0]
+TOP.mips_core.ISSUE.issue_in.active_list_id[1][7:0]
+TOP.mips_core.ISSUE.issue_in.phys_rs[0][5:0]
+@22
+TOP.mips_core.ISSUE.issue_in.phys_rs[1][5:0]
+TOP.mips_core.ISSUE.issue_in.phys_rt[0][5:0]
+TOP.mips_core.ISSUE.issue_in.phys_rt[1][5:0]
+@28
+#{TOP.mips_core.ISSUE.issue_in.phys_rs_valid[0:1]} TOP.mips_core.ISSUE.issue_in.phys_rs_valid[0] TOP.mips_core.ISSUE.issue_in.phys_rs_valid[1]
+#{TOP.mips_core.ISSUE.issue_in.phys_rt_valid[0:1]} TOP.mips_core.ISSUE.issue_in.phys_rt_valid[0] TOP.mips_core.ISSUE.issue_in.phys_rt_valid[1]
+@200
+-
+-Integer Queue
+@28
+TOP.mips_core.ISSUE.curr_int_queue.entry_available_bit[15:0]
+#{TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[0:15]} TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[0] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[1] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[2] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[3] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[4] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[5] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[6] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[7] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[8] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[9] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[10] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[11] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[12] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[13] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[14] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src1[15]
+#{TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[0:15]} TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[0] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[1] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[2] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[3] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[4] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[5] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[6] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[7] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[8] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[9] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[10] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[11] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[12] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[13] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[14] TOP.mips_core.ISSUE.curr_int_queue.ready_bit_src2[15]
+@24
+TOP.mips_core.ISSUE.curr_int_queue.active_list_id[0][7:0]
+TOP.mips_core.ISSUE.curr_int_queue.active_list_id[1][7:0]
+TOP.mips_core.ISSUE.curr_int_queue.active_list_id[2][7:0]
+TOP.mips_core.ISSUE.curr_int_queue.active_list_id[3][7:0]
+TOP.mips_core.ISSUE.curr_int_queue.active_list_id[4][7:0]
+TOP.mips_core.ISSUE.curr_int_queue.active_list_id[5][7:0]
+TOP.mips_core.ISSUE.curr_int_queue.active_list_id[6][7:0]
+TOP.mips_core.ISSUE.curr_int_queue.active_list_id[7][7:0]
+TOP.mips_core.ISSUE.curr_int_queue.active_list_id[8][7:0]
+TOP.mips_core.ISSUE.curr_int_queue.active_list_id[9][7:0]
+TOP.mips_core.ISSUE.curr_int_queue.active_list_id[10][7:0]
+TOP.mips_core.ISSUE.curr_int_queue.active_list_id[11][7:0]
+TOP.mips_core.ISSUE.curr_int_queue.active_list_id[12][7:0]
+TOP.mips_core.ISSUE.curr_int_queue.active_list_id[13][7:0]
+TOP.mips_core.ISSUE.curr_int_queue.active_list_id[14][7:0]
+TOP.mips_core.ISSUE.curr_int_queue.active_list_id[15][7:0]
+@200
+-
+@24
+TOP.mips_core.MEM_GLUE.o_load_write_back.valid
+TOP.mips_core.MEM_GLUE.o_load_write_back.rw_addr[5:0]
+TOP.mips_core.BRANCH_MISPREDICTION.misprediction_idx[6:0]
+@200
+-
+@28
+TOP.mips_core.LOAD_STORE_QUEUE.curr_load_queue.entry_available_bit[7:0]
+TOP.mips_core.LOAD_STORE_QUEUE.curr_load_queue.valid[7:0]
+@24
+TOP.mips_core.LOAD_STORE_QUEUE.curr_load_queue.entry_write_pointer[2:0]
+TOP.mips_core.LOAD_STORE_QUEUE.curr_load_queue.read_pointer[2:0]
+@200
+-
+@22
+TOP.mips_core.AGU.in.op2[31:0]
+TOP.mips_core.AGU.in.op1[31:0]
+@28
+TOP.mips_core.MEM_GLUE.i_d_cache_output.valid
+@22
+TOP.mips_core.MEM_GLUE.i_d_cache_output.data[31:0]
+@28
+TOP.mips_core.MEM_GLUE.curr_global_controls.invalidate_d_cache_output
+@22
+TOP.mips_core.AGU.out.result[31:0]
+@28
+TOP.mips_core.AGU.out.valid
+TOP.mips_core.ISSUE.curr_mem_queue.entry_available_bit[15:0]
+@24
+TOP.mips_core.ISSUE.curr_mem_queue.src1[0][5:0]
+@22
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[29][5:0]
+@28
+#{TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[0:15]} TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[0] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[1] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[2] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[3] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[4] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[5] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[6] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[7] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[8] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[9] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[10] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[11] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[12] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[13] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[14] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_src1[15]
+#{TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[0:15]} TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[0] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[1] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[2] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[3] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[4] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[5] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[6] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[7] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[8] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[9] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[10] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[11] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[12] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[13] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[14] TOP.mips_core.ISSUE.curr_mem_queue.ready_bit_sw_src[15]
+@200
+-
+@28
+TOP.mips_core.LOAD_STORE_QUEUE.curr_store_queue.entry_available_bit[7:0]
+TOP.mips_core.LOAD_STORE_QUEUE.curr_store_queue.valid[7:0]
+@24
+TOP.mips_core.LOAD_STORE_QUEUE.curr_store_queue.entry_write_pointer[2:0]
+TOP.mips_core.LOAD_STORE_QUEUE.curr_store_queue.read_pointer[2:0]
+@200
+-
+@28
+TOP.mips_core.REG_FILE.ds_miss
+@24
+TOP.mips_core.REG_FILE.active_list_hazard
+TOP.mips_core.REG_FILE.branch_hazard
+TOP.mips_core.REG_FILE.free_list_hazard
+TOP.mips_core.REG_FILE.load_store_hazard
+TOP.mips_core.REG_FILE.reg_jump_hazard
+TOP.mips_core.REG_FILE.decode_hazard
+@200
+-
+@24
+TOP.mips_core.DECODER.i_pc.pc[25:0]
+@200
+-
+@24
+TOP.mips_core.FETCH_UNIT.o_pc_current.pc[25:0]
+TOP.mips_core.FETCH_UNIT.o_pc_next.pc[25:0]
+@200
+-
+@28
+TOP.mips_core.COMMIT.o_commit_out.queue_load
+TOP.mips_core.COMMIT.o_commit_out.queue_store
+@200
+-
+@24
+TOP.mips_core.COMMIT.simulation_verification.valid
+TOP.mips_core.COMMIT.simulation_verification.data[31:0]
+TOP.mips_core.COMMIT.simulation_verification.is_load
+TOP.mips_core.COMMIT.simulation_verification.is_store
+@22
+TOP.mips_core.COMMIT.simulation_verification.mem_addr[25:0]
+@24
+TOP.mips_core.COMMIT.simulation_verification.pc[25:0]
+@22
+TOP.mips_core.COMMIT.simulation_verification.rw_addr[4:0]
+@24
+TOP.mips_core.COMMIT.simulation_verification.uses_rw
+@200
+-
+@24
+TOP.mips_core.DATA_STRCUTURES_UPDATE.hazard_signal_in.branch_miss
+TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_rename_state.free_head_pointer[5:0]
+TOP.mips_core.REG_FILE.phys_rw[5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[0][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[1][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[2][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[3][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[4][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[5][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[6][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[7][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[8][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[9][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[10][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[11][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[12][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[13][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[14][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[15][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[16][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[17][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[18][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[19][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[20][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[21][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[22][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[23][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[24][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[25][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[26][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[27][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[28][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[29][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[30][5:0]
+TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[31][5:0]
+[pattern_trace] 1
+[pattern_trace] 0
