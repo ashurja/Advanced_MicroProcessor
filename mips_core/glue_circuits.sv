@@ -65,7 +65,7 @@ module decode_stage_glue (
 
 		if (curr_rename_state.branch_decoded_hazard)
 		begin
-			o_decode_pass_through.valid[1] = i_decoded.valid; 
+			o_decode_pass_through.valid[1] = i_reg_data.valid; 
 			o_decode_pass_through.phys_rs[1] = i_reg_data.phys_rs; 
 			o_decode_pass_through.phys_rt[1] = i_reg_data.phys_rt; 
 
@@ -86,7 +86,7 @@ module decode_stage_glue (
 		end
 		else 
 		begin
-			o_decode_pass_through.valid[0] = i_decoded.valid; 
+			o_decode_pass_through.valid[0] = i_reg_data.valid; 
 			o_decode_pass_through.phys_rs[0] = i_reg_data.phys_rs; 
 			o_decode_pass_through.phys_rt[0] = i_reg_data.phys_rt; 
 
@@ -120,55 +120,51 @@ module decode_stage_glue (
 endmodule
 
 module mem_stage_glue (
-	global_controls_ifc.in curr_global_controls, 
     load_queue_ifc.in curr_load_queue, 
     store_queue_ifc.in curr_store_queue, 
 	cache_output_ifc.in i_d_cache_output, 
 	d_cache_controls_ifc.in i_d_cache_controls, 
 	d_cache_input_ifc.in o_d_cache_input, 
 
-	global_controls_ifc.out next_global_controls, 
 	write_back_ifc.out o_load_write_back, 
 	inst_commit_ifc.out o_mem_commit,
 	output o_done
 );
 	always_comb
 	begin
-		next_global_controls.invalidate_d_cache_output = curr_global_controls.invalidate_d_cache_output; 
+		o_done = 1'b1; 
+
+		o_mem_commit.valid = 1'b0; 
+		o_mem_commit.active_list_id = '0; 
 
 		o_load_write_back.valid = '0; 
 		o_load_write_back.uses_rw  = '0; 
 		o_load_write_back.rw_addr = '0; 
 		o_load_write_back.rw_data = '0; 
 
-		if (o_d_cache_input.mem_action == WRITE)
+		if (o_d_cache_input.valid)
 		begin
-			o_done = (i_d_cache_controls.NOP || !curr_store_queue.valid[curr_store_queue.read_pointer]) ? 1'b1 : i_d_cache_output.valid;   
-
-			o_mem_commit.valid = i_d_cache_output.valid;
-			o_mem_commit.active_list_id = curr_store_queue.active_list_id[curr_store_queue.read_pointer]; 
-		end
-
-		else 
-		begin
-			o_done = (i_d_cache_controls.bypass_possible || i_d_cache_controls.NOP || !curr_load_queue.valid[curr_load_queue.read_pointer]) ? 1'b1 : i_d_cache_output.valid; 
-
-			o_load_write_back.valid = (i_d_cache_controls.bypass_possible) ? 1'b1 : i_d_cache_output.valid & !curr_load_queue.entry_available_bit[curr_load_queue.read_pointer];
-			o_load_write_back.uses_rw = curr_active_state.uses_rw[curr_load_queue.active_list_id[curr_load_queue.read_pointer]]; 
-			o_load_write_back.rw_addr = curr_active_state.rw_addr[curr_load_queue.active_list_id[curr_load_queue.read_pointer]]; 
-			o_load_write_back.rw_data = (i_d_cache_controls.bypass_possible) ? curr_store_queue.sw_data[i_d_cache_controls.bypass_index] : i_d_cache_output.data; 
-
-			o_mem_commit.valid = o_load_write_back.valid;
-			o_mem_commit.active_list_id = curr_load_queue.active_list_id[curr_load_queue.read_pointer];
-
-			if (o_done && curr_global_controls.invalidate_d_cache_output)
+			if (o_d_cache_input.mem_action == WRITE)
 			begin
-				o_mem_commit.valid = 1'b0; 
-				o_load_write_back.valid = 1'b0; 
-				next_global_controls.invalidate_d_cache_output = 1'b0; 
+				o_done = i_d_cache_output.valid;   
+
+				o_mem_commit.valid = i_d_cache_output.valid;
+				o_mem_commit.active_list_id = curr_store_queue.active_list_id[i_d_cache_controls.dispatch_index]; 
+			end
+
+			else 
+			begin
+				o_done = (i_d_cache_controls.bypass_possible) ? 1'b1 : i_d_cache_output.valid; 
+
+				o_load_write_back.valid = (i_d_cache_controls.bypass_possible) ? 1'b1 : i_d_cache_output.valid & !i_d_cache_controls.NOP;
+				o_load_write_back.uses_rw = curr_active_state.uses_rw[curr_load_queue.active_list_id[i_d_cache_controls.dispatch_index]]; 
+				o_load_write_back.rw_addr = curr_active_state.rw_addr[curr_load_queue.active_list_id[i_d_cache_controls.dispatch_index]]; 
+				o_load_write_back.rw_data = (i_d_cache_controls.bypass_possible) ? curr_store_queue.sw_data[i_d_cache_controls.bypass_index] : i_d_cache_output.data; 
+
+				o_mem_commit.valid = o_load_write_back.valid;
+				o_mem_commit.active_list_id = curr_load_queue.active_list_id[i_d_cache_controls.dispatch_index];
 			end
 		end
- 
 	end
 
 endmodule

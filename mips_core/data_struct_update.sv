@@ -4,7 +4,7 @@ module data_struct_update (
 
 	hazard_signals_ifc.in hazard_signal_in, 
 
-	d_cache_input_ifc.in o_d_cache_input, 
+	d_cache_input_ifc.in i_d_cache_input, 
 	scheduler_output_ifc.in i_scheduler, 
 
 	commit_output_ifc.in i_commit_out, 
@@ -21,7 +21,6 @@ module data_struct_update (
 	branch_state_ifc.in next_branch_state, 
 	load_queue_ifc.in next_load_queue, 
 	store_queue_ifc.in next_store_queue,
-	global_controls_ifc.in next_global_controls, 
 
 	rename_ifc.in misprediction_rename_state, 
 	active_state_ifc.in misprediction_active_state, 
@@ -30,8 +29,6 @@ module data_struct_update (
 	load_queue_ifc.in misprediction_load_queue, 
 	store_queue_ifc.in misprediction_store_queue, 
 	branch_state_ifc.in misprediction_branch_state, 
-	commit_state_ifc.in misprediction_commit_state,
-	global_controls_ifc.in misprediction_global_controls,
 
 	issue_input_ifc.out buffered_issue_state, 
     rename_ifc.out curr_rename_state, 
@@ -41,41 +38,31 @@ module data_struct_update (
     memory_issue_queue_ifc.out curr_mem_queue,
 	branch_state_ifc.out curr_branch_state,
 	load_queue_ifc.out curr_load_queue, 
-	store_queue_ifc.out curr_store_queue,
-	global_controls_ifc.out curr_global_controls
+	store_queue_ifc.out curr_store_queue
 );
 
     always_ff @(posedge clk) 
-    begin 
-		if (!rst_n)
-		begin
-			curr_global_controls.invalidate_d_cache_output <= 1'b0;
-		end
-		else 
-		begin
-			if (hazard_signal_in.branch_miss)
-				curr_global_controls.invalidate_d_cache_output <= misprediction_global_controls.invalidate_d_cache_output; 
-			else 
-				curr_global_controls.invalidate_d_cache_output <= next_global_controls.invalidate_d_cache_output;
-		end
-
-	end
-
-
-
-    always_ff @(posedge clk) 
     begin : UPDATE_COMMIT_STATE
+
+		curr_commit_state.ready_to_commit <= next_commit_state.ready_to_commit; 
+		curr_commit_state.entry_available_bit <= next_commit_state.entry_available_bit; 
 		curr_commit_state.branch_read_pointer <= next_commit_state.branch_read_pointer; 
-    	curr_commit_state.ready_to_commit <= next_commit_state.ready_to_commit; 
 		curr_commit_state.oldest_inst_pointer <= next_commit_state.oldest_inst_pointer; 
 		curr_commit_state.free_tail_pointer <= next_commit_state.free_tail_pointer; 
-		curr_commit_state.entry_available_bit <= next_commit_state.entry_available_bit; 
+		curr_commit_state.load_commit_pointer <= next_commit_state.load_commit_pointer;
+		curr_commit_state.store_commit_pointer <= next_commit_state.store_commit_pointer;
 
-		if (i_reg_data.valid)
+		if (hazard_signal_in.branch_miss)
+		begin
+			curr_commit_state.entry_available_bit[misprediction_active_state.youngest_inst_pointer] <= 1'b0; 
+			curr_commit_state.ready_to_commit[misprediction_active_state.youngest_inst_pointer] <= 1'b0; 
+		end
+		else 
 		begin
 			curr_commit_state.entry_available_bit[curr_active_state.youngest_inst_pointer] <= 1'b0; 
 			curr_commit_state.ready_to_commit[curr_active_state.youngest_inst_pointer] <= 1'b0; 
 		end
+
 			
 	end
 
@@ -242,48 +229,56 @@ module data_struct_update (
 			curr_load_queue.active_list_id <= misprediction_load_queue.active_list_id; 
 			curr_load_queue.entry_available_bit <= misprediction_load_queue.entry_available_bit; 
 			curr_load_queue.entry_write_pointer <= misprediction_load_queue.entry_write_pointer; 
+			curr_load_queue.valid <= misprediction_load_queue.valid; 
 
 			curr_store_queue.active_list_id <= misprediction_store_queue.active_list_id; 
 			curr_store_queue.entry_available_bit <= misprediction_store_queue.entry_available_bit; 
 			curr_store_queue.entry_write_pointer <= misprediction_store_queue.entry_write_pointer; 
+			curr_store_queue.valid <= misprediction_store_queue.valid; 
 		end
 		else 
 		begin
 			curr_load_queue.active_list_id <= next_load_queue.active_list_id; 
 			curr_load_queue.entry_available_bit <= next_load_queue.entry_available_bit; 
 			curr_load_queue.entry_write_pointer <= next_load_queue.entry_write_pointer; 
+			curr_load_queue.valid <= next_load_queue.valid;
 
 			curr_store_queue.active_list_id <= next_store_queue.active_list_id; 
 			curr_store_queue.entry_available_bit <= next_store_queue.entry_available_bit; 
 			curr_store_queue.entry_write_pointer <= next_store_queue.entry_write_pointer; 
+			curr_store_queue.valid <= next_store_queue.valid; 
 		end
-		curr_load_queue.valid <= next_load_queue.valid;
-		curr_load_queue.mem_addr <= next_load_queue.mem_addr; 
 
-		curr_store_queue.valid <= next_store_queue.valid; 
+		curr_load_queue.mem_addr <= next_load_queue.mem_addr; 
+		curr_load_queue.read_pointer <= next_load_queue.read_pointer; 
+
 		curr_store_queue.sw_data <= next_store_queue.sw_data; 
 		curr_store_queue.mem_addr <= next_store_queue.mem_addr; 
+		curr_store_queue.read_pointer <= next_store_queue.read_pointer; 
 
-		// if (i_load_write_back.valid)   
-        // begin
-        //     curr_load_queue.read_pointer <= curr_load_queue.read_pointer + 1'b1; 
-		// 	curr_load_queue.entry_available_bit[curr_load_queue.read_pointer] <= 1'b1; 
-		// 	curr_load_queue.commit_pointer <= curr_load_queue.commit_pointer + 1'b1; 
-        //     curr_load_queue.valid[curr_load_queue.read_pointer] <= 1'b0; 
-        // end
+		if (i_d_cache_input.valid)
+		begin
+			if (!i_d_cache_input.mem_action && !hazard_signal_in.dc_miss)
+			begin
+				curr_store_queue.valid[curr_store_queue.read_pointer] <= 1'b0;
+			end
+
+			if (i_d_cache_input.mem_action && !hazard_signal_in.dc_miss)
+			begin
+				curr_load_queue.valid[curr_load_queue.read_pointer] <= 1'b0; 
+			end
+		end
 
 		if (i_commit_out.load_done)
 		begin
-            curr_load_queue.read_pointer <= curr_load_queue.read_pointer + 1'b1; 
-			curr_load_queue.entry_available_bit[curr_load_queue.read_pointer] <= 1'b1; 
-			curr_load_queue.valid[curr_load_queue.read_pointer] <= 1'b0; 
+			curr_load_queue.entry_available_bit[curr_commit_state.load_commit_pointer] <= 1'b1; 
+			curr_load_queue.valid[curr_commit_state.load_commit_pointer] <= 1'b0; 
 		end
 
 		if (i_commit_out.store_done)
-		begin
-			curr_store_queue.entry_available_bit[curr_store_queue.read_pointer] <= 1'b1; 
-			curr_store_queue.read_pointer <= curr_store_queue.read_pointer + 1'b1; 
-			curr_store_queue.valid[curr_store_queue.read_pointer] <= 1'b0; 
+		begin 
+			curr_store_queue.entry_available_bit[curr_commit_state.store_commit_pointer] <= 1'b1; 
+			curr_store_queue.valid[curr_commit_state.store_commit_pointer] <= 1'b0; 
 		end
 	end
 

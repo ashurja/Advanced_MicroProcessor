@@ -307,25 +307,25 @@ module issue (
 
 		for (int i = 0; i < `INT_QUEUE_SIZE; i++) 
 		begin
-			if (i_alu_write_back.uses_rw && i_alu_write_back.rw_addr == next_int_queue.src1[i] && next_int_queue.entry_available_bit[i] == 0) 
+			if (i_alu_write_back.valid && i_alu_write_back.uses_rw && i_alu_write_back.rw_addr == next_int_queue.src1[i] && next_int_queue.entry_available_bit[i] == 0) 
 				next_int_queue.ready_bit_src1[i] = 1'b1; 
-			if (i_alu_write_back.uses_rw && i_alu_write_back.rw_addr == next_int_queue.src2[i] && next_int_queue.entry_available_bit[i] == 0) 
+			if (i_alu_write_back.valid && i_alu_write_back.uses_rw && i_alu_write_back.rw_addr == next_int_queue.src2[i] && next_int_queue.entry_available_bit[i] == 0) 
 				next_int_queue.ready_bit_src2[i] = 1'b1; 	
-			if (i_load_write_back.uses_rw && i_load_write_back.rw_addr == next_int_queue.src1[i] && next_int_queue.entry_available_bit[i] == 0)
+			if (i_load_write_back.valid && i_load_write_back.uses_rw && i_load_write_back.rw_addr == next_int_queue.src1[i] && next_int_queue.entry_available_bit[i] == 0)
 				next_int_queue.ready_bit_src1[i] = 1'b1;
-			if (i_load_write_back.uses_rw && i_load_write_back.rw_addr == next_int_queue.src2[i] && next_int_queue.entry_available_bit[i] == 0) 
+			if (i_load_write_back.valid && i_load_write_back.uses_rw && i_load_write_back.rw_addr == next_int_queue.src2[i] && next_int_queue.entry_available_bit[i] == 0) 
 				next_int_queue.ready_bit_src2[i] = 1'b1; 
 		end
 
 		for (int i = 0; i < `MEM_QUEUE_SIZE; i++) 
 		begin
-			if (i_alu_write_back.rw_addr == next_mem_queue.src1[i] && next_mem_queue.entry_available_bit[i] == 0) 
+			if (i_alu_write_back.valid && i_alu_write_back.rw_addr == next_mem_queue.src1[i] && next_mem_queue.entry_available_bit[i] == 0) 
 				next_mem_queue.ready_bit_src1[i] = 1'b1; 
-			if (i_alu_write_back.rw_addr == next_mem_queue.sw_src[i] && next_mem_queue.entry_available_bit[i] == 0) 
+			if (i_alu_write_back.valid && i_alu_write_back.rw_addr == next_mem_queue.sw_src[i] && next_mem_queue.entry_available_bit[i] == 0) 
 				next_mem_queue.ready_bit_sw_src[i] = 1'b1; 	
-			if (i_load_write_back.rw_addr == next_mem_queue.src1[i] && next_mem_queue.entry_available_bit[i] == 0) 
+			if (i_load_write_back.valid && i_load_write_back.rw_addr == next_mem_queue.src1[i] && next_mem_queue.entry_available_bit[i] == 0) 
 				next_mem_queue.ready_bit_src1[i] = 1'b1; 
-			if (i_load_write_back.rw_addr == next_mem_queue.sw_src[i] && next_mem_queue.entry_available_bit[i] == 0) 
+			if (i_load_write_back.valid && i_load_write_back.rw_addr == next_mem_queue.sw_src[i] && next_mem_queue.entry_available_bit[i] == 0) 
 				next_mem_queue.ready_bit_sw_src[i] = 1'b1; 
 		end
 

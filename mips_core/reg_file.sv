@@ -47,6 +47,7 @@ module reg_file (
 	pc_ifc.in pc_in, 
 	decoder_output_ifc.in i_decoded,
 
+	cache_output_ifc.in i_inst,
 	hazard_signals_ifc.in hazard_signal_in, 
 	write_back_ifc.in i_alu_write_back,
 	write_back_ifc.in i_load_write_back,
@@ -60,7 +61,8 @@ module reg_file (
 	rename_ifc.out next_rename_state,
 	reg_file_output_ifc.out out,
 
-	output logic decode_hazard
+	output logic decode_hazard, 
+	output logic front_pipeline_halt
 );
 
 	logic [`PHYS_REG_NUM_INDEX - 1 : 0] phys_rw; 
@@ -137,31 +139,37 @@ module reg_file (
 
 		if (!decode_hazard && i_decoded.valid)
 		begin
-			if (i_decoded.uses_rw)
-			begin
-				phys_rw = curr_rename_state.free_list[curr_rename_state.free_head_pointer]; 
-
-				next_rename_state.m_reg_file_valid_bit[phys_rw] = 1'b0;  
-				next_rename_state.rename_buffer[i_decoded.rw_addr] = phys_rw; 
-				next_rename_state.free_head_pointer = curr_rename_state.free_head_pointer + 1'b1;  
-				next_rename_state.reverse_rename_map[phys_rw] = i_decoded.rw_addr;
-
-				next_active_state.reclaim_list[curr_active_state.youngest_inst_pointer] = curr_rename_state.rename_buffer[i_decoded.rw_addr]; 
-			end
 
 			if (i_decoded.is_branch_jump && !i_decoded.is_jump)
 				next_rename_state.branch_decoded_hazard = 1'b1; 
 			else 
 				next_rename_state.branch_decoded_hazard = 1'b0; 
 
-			next_active_state.color_bit[curr_active_state.youngest_inst_pointer] = curr_active_state.global_color_bit; 
-			next_active_state.pc[curr_active_state.youngest_inst_pointer] = pc_in.pc; 
-			next_active_state.is_load[curr_active_state.youngest_inst_pointer] = i_decoded.mem_action == READ & i_decoded.is_mem_access; 
-			next_active_state.is_store[curr_active_state.youngest_inst_pointer] = i_decoded.mem_action == WRITE & i_decoded.is_mem_access; 
-			next_active_state.uses_rw[curr_active_state.youngest_inst_pointer] = i_decoded.uses_rw; 
-			next_active_state.rw_addr[curr_active_state.youngest_inst_pointer] = phys_rw;
-			next_active_state.youngest_inst_pointer = curr_active_state.youngest_inst_pointer + 1'b1; 
-			if (next_active_state.youngest_inst_pointer == 0) next_active_state.global_color_bit = !curr_active_state.global_color_bit; 
+			if (i_inst.data != 0)
+			begin
+				if (i_decoded.uses_rw)
+				begin
+					phys_rw = curr_rename_state.free_list[curr_rename_state.free_head_pointer]; 
+
+					next_rename_state.m_reg_file_valid_bit[phys_rw] = 1'b0;  
+					next_rename_state.rename_buffer[i_decoded.rw_addr] = phys_rw; 
+					next_rename_state.free_head_pointer = curr_rename_state.free_head_pointer + 1'b1;  
+					next_rename_state.reverse_rename_map[phys_rw] = i_decoded.rw_addr;
+
+					next_active_state.reclaim_list[curr_active_state.youngest_inst_pointer] = curr_rename_state.rename_buffer[i_decoded.rw_addr]; 
+				end
+
+
+
+				next_active_state.color_bit[curr_active_state.youngest_inst_pointer] = curr_active_state.global_color_bit; 
+				next_active_state.pc[curr_active_state.youngest_inst_pointer] = pc_in.pc; 
+				next_active_state.is_load[curr_active_state.youngest_inst_pointer] = i_decoded.mem_action == READ & i_decoded.is_mem_access; 
+				next_active_state.is_store[curr_active_state.youngest_inst_pointer] = i_decoded.mem_action == WRITE & i_decoded.is_mem_access; 
+				next_active_state.uses_rw[curr_active_state.youngest_inst_pointer] = i_decoded.uses_rw; 
+				next_active_state.rw_addr[curr_active_state.youngest_inst_pointer] = phys_rw;
+				next_active_state.youngest_inst_pointer = curr_active_state.youngest_inst_pointer + 1'b1; 
+				if (next_active_state.youngest_inst_pointer == 0) next_active_state.global_color_bit = !curr_active_state.global_color_bit; 
+			end
 		end
 
 
@@ -183,11 +191,10 @@ module reg_file (
 		end
 
 	end
-
-
+	
 	always_comb
 	begin
-		out.valid = !decode_hazard && i_decoded.valid; 
+		out.valid = (!decode_hazard) & (i_decoded.valid) & (i_inst.data != 0); 
 		
 		out.phys_rs = curr_rename_state.rename_buffer[i_decoded.rs_addr]; 
 		out.phys_rt = curr_rename_state.rename_buffer[i_decoded.rt_addr]; 
@@ -199,19 +206,27 @@ module reg_file (
 		out.color_bit = curr_active_state.global_color_bit; 
 	end
 
-
-
-`ifdef SIMULATION
 	logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] prev_inst; 
+
+	always_comb
+	begin
+		front_pipeline_halt = prev_inst == curr_active_state.youngest_inst_pointer; 
+	end
+
 	always_ff @(posedge clk)
 	begin
 		prev_inst <= curr_active_state.youngest_inst_pointer; 
-		if (ds_miss && prev_inst != curr_active_state.youngest_inst_pointer) stats_event("delay_slot_miss");
-		if (active_list_hazard && prev_inst != curr_active_state.youngest_inst_pointer) stats_event("active_list_full");
-		if (load_store_hazard && prev_inst != curr_active_state.youngest_inst_pointer) stats_event("load_store_queue_full");
-		if (reg_jump_hazard && prev_inst != curr_active_state.youngest_inst_pointer) stats_event("reg_jump_hazard");
-		if (branch_hazard && prev_inst != curr_active_state.youngest_inst_pointer) stats_event("dec_branch");
-		if (free_list_hazard && prev_inst != curr_active_state.youngest_inst_pointer) stats_event("free_list_full");
+	end
+
+`ifdef SIMULATION
+	always_ff @(posedge clk)
+	begin
+		if (ds_miss && !front_pipeline_halt) stats_event("delay_slot_miss");
+		if (active_list_hazard && !front_pipeline_halt) stats_event("active_list_full");
+		if (load_store_hazard && !front_pipeline_halt) stats_event("load_store_queue_full");
+		if (reg_jump_hazard && !front_pipeline_halt) stats_event("reg_jump_hazard");
+		if (branch_hazard && !front_pipeline_halt) stats_event("dec_branch");
+		if (free_list_hazard && !front_pipeline_halt) stats_event("free_list_full");
 	end
 `endif
 

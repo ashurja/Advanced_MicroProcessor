@@ -106,6 +106,7 @@ endmodule
 module pr_e2m (
 	input clk,    // Clock
 	input rst_n,  // Synchronous reset active low
+	input invalidate_d_cache_output, 
 
 	hazard_signals_ifc.in hazard_signal_in, 
 
@@ -137,6 +138,7 @@ module pr_e2m (
 			o_d_cache_controls.bypass_possible <= '0; 
 			o_d_cache_controls.bypass_index <= '0; 
 			o_d_cache_controls.NOP <= 1'b1; 
+			o_d_cache_controls.dispatch_index <= '0; 
 		end
 		else
 		begin
@@ -150,7 +152,11 @@ module pr_e2m (
 				o_d_cache_controls.bypass_possible <= i_d_cache_controls.bypass_possible;
 				o_d_cache_controls.bypass_index <= i_d_cache_controls.bypass_index; 
 				o_d_cache_controls.NOP <= i_d_cache_controls.NOP; 
+				o_d_cache_controls.dispatch_index <= i_d_cache_controls.dispatch_index; 
 			end
+
+			if (invalidate_d_cache_output)
+				o_d_cache_controls.NOP <= 1'b1; 
 		end
 	end
 endmodule

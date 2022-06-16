@@ -71,11 +71,11 @@ endinterface
 interface d_cache_controls_ifc (); 
 	logic bypass_possible; 
 	logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] bypass_index; 
+	logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] dispatch_index; 
 	logic NOP; 
-	modport in (input bypass_possible, bypass_index, NOP); 
-	modport out (output bypass_possible, bypass_index, NOP); 
+	modport in (input bypass_possible, bypass_index, NOP, dispatch_index); 
+	modport out (output bypass_possible, bypass_index, NOP, dispatch_index); 
 endinterface
-
 
 interface branch_decoded_ifc ();
 	logic valid;	// High means the instruction is a branch or a jump

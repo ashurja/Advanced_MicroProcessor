@@ -29,6 +29,7 @@ module hazard_controller (
 	input logic mem_done,
 	input logic decode_hazard,
 	input logic issue_queue_full,
+	input logic front_pipeline_halt, 
 
 	cache_output_ifc.in if_i_cache_output,
 	pc_ifc.in dec_pc,
@@ -262,6 +263,7 @@ module hazard_controller (
 		if (ex_overload) stats_event("ex_overload");
 		if (dc_miss && !mem_halt) stats_event("dc_miss");
 		if (ex_branch_result.valid) stats_event("is_branch"); 
+		if (issue_queue_full && !front_pipeline_halt) stats_event("issue_queue_full"); 
 	end
 `endif
 

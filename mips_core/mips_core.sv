@@ -132,8 +132,6 @@ module mips_core (
 	load_queue_ifc misprediction_load_queue(); 
 	store_queue_ifc misprediction_store_queue(); 
 	branch_state_ifc misprediction_branch_state(); 
-	commit_state_ifc misprediction_commit_state(); 
-	global_controls_ifc misprediction_global_controls(); 
 	// xxxx Hazard control
 
 	logic mem_done;
@@ -141,6 +139,9 @@ module mips_core (
 	logic decode_hazard; 
 	logic load_store_queue_full; 
 	logic misprediction_recovery; 
+	logic invalidate_d_cache_output; 
+
+	logic front_pipeline_halt; 
 
 	branch_state_ifc curr_branch_state(); 
 	branch_state_ifc next_branch_state(); 
@@ -151,8 +152,6 @@ module mips_core (
 	hazard_control_ifc d2i_hc();
 	load_pc_ifc load_pc();
 
-	global_controls_ifc curr_global_controls(); 
-	global_controls_ifc next_global_controls(); 
 
 	//SIMULATION
 	simulation_verification_ifc simulation_verification(); 
@@ -233,6 +232,7 @@ module mips_core (
 
 		.pc_in(f2d_pc),
 		.i_decoded(dec_decoder_output),
+		.i_inst(f2d_inst), 
 		.i_alu_write_back(alu_write_back),
 		.i_load_write_back(load_write_back),
 		.curr_rename_state,
@@ -244,7 +244,8 @@ module mips_core (
 		.next_active_state, 
 		.next_rename_state,
 		.out(reg_file_out), 
-		.decode_hazard
+		.decode_hazard, 
+		.front_pipeline_halt
 	);
 
 
@@ -330,6 +331,7 @@ module mips_core (
 	load_store_queue LOAD_STORE_QUEUE (
 		.rst_n, 
  
+		.hazard_signal_in(hazard_signals), 
 		.i_scheduler(scheduler_out),
 		.i_reg_data(reg_file_out), 
 		.i_agu_output(agu_output), 
@@ -353,6 +355,7 @@ module mips_core (
 	pr_e2m PR_E2M (
 		.clk, .rst_n, 
 
+		.invalidate_d_cache_output, 
 		.hazard_signal_in(hazard_signals), 
 		.i_d_cache_input(i_d_cache_input),
 		.i_d_cache_controls(i_d_cache_controls), 
@@ -377,14 +380,12 @@ module mips_core (
 	);
 
 	mem_stage_glue MEM_GLUE (
-		.curr_global_controls,
 		.curr_load_queue, 
 		.curr_store_queue, 
 		.i_d_cache_output(d_cache_output), 
 		.i_d_cache_controls(o_d_cache_controls), 
 		.o_d_cache_input,
 
-		.next_global_controls, 
 		.o_load_write_back(load_write_back), 
 		.o_mem_commit(mem_commit), 
 		.o_done(mem_done)
@@ -412,7 +413,6 @@ module mips_core (
 
 		.hazard_signal_in(hazard_signals),
 
-		.curr_global_controls,
 		.curr_branch_state,
 		.curr_rename_state, 
 		.curr_active_state, 
@@ -420,9 +420,7 @@ module mips_core (
 		.curr_mem_queue, 
 		.curr_load_queue, 
 		.curr_store_queue, 
-		.curr_commit_state, 
 
-		.misprediction_global_controls,
 		.misprediction_rename_state, 
 		.misprediction_active_state, 
 		.misprediction_int_queue, 
@@ -430,7 +428,8 @@ module mips_core (
 		.misprediction_load_queue, 
 		.misprediction_store_queue, 
 		.misprediction_branch_state, 
-		.misprediction_commit_state
+
+		.invalidate_d_cache_output
 	); 
 
 	data_struct_update DATA_STRCUTURES_UPDATE (
@@ -439,14 +438,13 @@ module mips_core (
 
 		.hazard_signal_in(hazard_signals), 
 
-		.o_d_cache_input,
+		.i_d_cache_input,
 		.i_scheduler(scheduler_out),
 		.i_commit_out(commit_out), 
 		.i_load_write_back(load_write_back),
 		.i_reg_data(reg_file_out),
 		.i_decode_pass_through(decode_pass_through),
-
-		.next_global_controls, 
+ 
 		.next_rename_state, 
 		.next_active_state, 
 		.next_commit_state, 
@@ -456,7 +454,6 @@ module mips_core (
 		.next_load_queue, 
 		.next_store_queue, 
 
-		.misprediction_global_controls, 
 		.misprediction_rename_state, 
 		.misprediction_active_state, 
 		.misprediction_int_queue, 
@@ -464,7 +461,6 @@ module mips_core (
 		.misprediction_load_queue, 
 		.misprediction_store_queue, 
 		.misprediction_branch_state, 
-		.misprediction_commit_state,
 
 		.buffered_issue_state,
 		.curr_rename_state, 
@@ -474,8 +470,7 @@ module mips_core (
 		.curr_mem_queue,
 		.curr_branch_state, 
 		.curr_load_queue, 
-		.curr_store_queue, 
-		.curr_global_controls
+		.curr_store_queue 
 	); 
 	// If you want to change the line size and total size of data cache,
 	// uncomment the following two lines and change the parameter.
@@ -493,6 +488,7 @@ module mips_core (
 		.mem_done, 
 		.decode_hazard, 
 		.issue_queue_full, 
+		.front_pipeline_halt, 
 
 		.next_rename_state,
 

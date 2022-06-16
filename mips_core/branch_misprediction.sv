@@ -24,8 +24,6 @@ module branch_misprediction  (
     memory_issue_queue_ifc.in curr_mem_queue, 
     load_queue_ifc.in curr_load_queue, 
     store_queue_ifc.in curr_store_queue, 
-    commit_state_ifc.in curr_commit_state, 
-    global_controls_ifc.in curr_global_controls, 
 
     rename_ifc.out misprediction_rename_state, 
     active_state_ifc.out misprediction_active_state, 
@@ -34,8 +32,8 @@ module branch_misprediction  (
     load_queue_ifc.out misprediction_load_queue, 
     store_queue_ifc.out misprediction_store_queue,
     branch_state_ifc.out misprediction_branch_state, 
-    commit_state_ifc.out misprediction_commit_state, 
-    global_controls_ifc.out misprediction_global_controls
+    
+    output invalidate_d_cache_output
 );
     
     logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] branch_id_with_ds; 
@@ -72,19 +70,19 @@ module branch_misprediction  (
                 end
             end
 
-            misprediction_branch_state.write_pointer = misprediction_idx; 
+            misprediction_branch_state.write_pointer = misprediction_idx + 1'b1; 
 
             for (int i = 0; i < `BRANCH_NUM; i++)
             begin
                 if (curr_active_state.color_bit[curr_branch_state.branch_id[i]] == hazard_signal_in.color_bit)
                 begin
-                    if (curr_branch_state.branch_id[i] >= hazard_signal_in.branch_id)
+                    if (hazard_signal_in.branch_id < curr_branch_state.branch_id[i])
                         misprediction_branch_state.valid[i] = 1'b0; 
                 end
 
                 else
                 begin
-                    if (curr_branch_state.branch_id[i] <= hazard_signal_in.branch_id)
+                    if (hazard_signal_in.branch_id > curr_branch_state.branch_id[i])
                         misprediction_branch_state.valid[i] = 1'b0; 
                 end
             end
@@ -183,19 +181,18 @@ module branch_misprediction  (
         end
     end
 
-
     logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] load_queue_traverse_pointer; 
+    logic [`LOAD_STORE_SIZE_INDEX -  1 : 0] store_queue_traverse_pointer; 
+
+    logic [`LOAD_STORE_SIZE - 1 : 0] cmpt_store_write_pointer; 
     logic [`LOAD_STORE_SIZE - 1 : 0] cmpt_load_write_pointer; 
 
-    logic load_queue_branch_dependant; 
     logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] new_load_write_pointer; 
-
-
-    logic [`LOAD_STORE_SIZE_INDEX -  1 : 0] store_queue_traverse_pointer; 
-    logic [`LOAD_STORE_SIZE - 1 : 0] cmpt_store_write_pointer; 
-
-    logic store_queue_branch_dependant; 
     logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] new_store_write_pointer; 
+    
+    logic [`LOAD_STORE_SIZE - 1 : 0] cmpt_load_read_pointer; 
+
+    logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] new_load_read_pointer; 
 
 	priority_encoder# (
 		.m(`LOAD_STORE_SIZE),
@@ -203,7 +200,7 @@ module branch_misprediction  (
     ) load_write_pointer_retriever (
 		.x(cmpt_load_write_pointer),
 		.bottom_up(1'b1),
-		.valid_in(load_queue_branch_dependant),
+		.valid_in(),
 		.y(new_load_write_pointer)
 	);
 
@@ -214,30 +211,41 @@ module branch_misprediction  (
     ) store_write_pointer_retriever (
 		.x(cmpt_store_write_pointer),
 		.bottom_up(1'b1),
-		.valid_in(store_queue_branch_dependant),
+		.valid_in(),
 		.y(new_store_write_pointer)
+	);
+
+	priority_encoder# (
+		.m(`LOAD_STORE_SIZE),
+		.n(`LOAD_STORE_SIZE_INDEX)
+    ) load_read_pointer_retriever (
+		.x(cmpt_load_read_pointer),
+		.bottom_up(1'b1),
+		.valid_in(),
+		.y(new_load_read_pointer)
 	);
 
     always_comb
     begin : handle_d_cache_input_queues
+        invalidate_d_cache_output = 1'b0; 
+
         misprediction_load_queue.entry_available_bit = curr_load_queue.entry_available_bit; 
         misprediction_load_queue.active_list_id = curr_load_queue.active_list_id; 
         misprediction_load_queue.read_pointer = curr_load_queue.read_pointer; 
         misprediction_load_queue.entry_write_pointer = curr_load_queue.entry_write_pointer; 
-
+        misprediction_load_queue.valid = curr_load_queue.valid; 
 
         misprediction_store_queue.active_list_id = curr_store_queue.active_list_id; 
         misprediction_store_queue.entry_available_bit = curr_store_queue.entry_available_bit; 
         misprediction_store_queue.read_pointer = curr_store_queue.read_pointer; 
         misprediction_store_queue.entry_write_pointer = curr_store_queue.entry_write_pointer; 
-
-
-        misprediction_global_controls.invalidate_d_cache_output = curr_global_controls.invalidate_d_cache_output; 
+        misprediction_store_queue.valid = curr_store_queue.valid; 
 
         load_queue_traverse_pointer = '0; 
         store_queue_traverse_pointer = '0; 
 
         cmpt_load_write_pointer = '0; 
+        cmpt_load_read_pointer = '0;
         cmpt_store_write_pointer = '0; 
  
         if (hazard_signal_in.branch_miss)
@@ -247,12 +255,20 @@ module branch_misprediction  (
                 if (color_bit_with_ds == curr_active_state.color_bit[curr_load_queue.active_list_id[i]])
                 begin
                     if (branch_id_with_ds < curr_load_queue.active_list_id[i])
-                        misprediction_load_queue.entry_available_bit[i] = 1'b1; 
+                    begin
+                        misprediction_load_queue.entry_available_bit[i] = 1'b1;    
+                        misprediction_load_queue.valid[i] = 1'b0;  
+                    end
+                        
                 end
                 else 
                 begin
                     if (branch_id_with_ds > curr_load_queue.active_list_id[i])
-                        misprediction_load_queue.entry_available_bit[i] = 1'b1; 
+                    begin
+                        misprediction_load_queue.entry_available_bit[i] = 1'b1;    
+                        misprediction_load_queue.valid[i] = 1'b0;  
+                    end
+                        
                 end
             end
 
@@ -262,71 +278,48 @@ module branch_misprediction  (
                 if (color_bit_with_ds == curr_active_state.color_bit[curr_store_queue.active_list_id[i]])
                 begin
                     if (branch_id_with_ds < curr_store_queue.active_list_id[i])
-                        misprediction_store_queue.entry_available_bit[i] = 1'b1; 
+                    begin
+                        misprediction_store_queue.entry_available_bit[i] = 1'b1;    
+                        misprediction_store_queue.valid[i] = 1'b0;  
+                    end
                 end
                 else 
                 begin
                     if (branch_id_with_ds > curr_store_queue.active_list_id[i])
-                        misprediction_store_queue.entry_available_bit[i] = 1'b1; 
+                    begin
+                        misprediction_store_queue.entry_available_bit[i] = 1'b1;    
+                        misprediction_store_queue.valid[i] = 1'b0;  
+                    end
                 end
             end
 
             for (int i = 0; i < `LOAD_STORE_SIZE; i++)
             begin
-                load_queue_traverse_pointer = (curr_load_queue.read_pointer + i[`LOAD_STORE_SIZE_INDEX - 1 : 0]); 
+                load_queue_traverse_pointer = (curr_commit_state.load_commit_pointer + i[`LOAD_STORE_SIZE_INDEX - 1 : 0]); 
                 if (misprediction_load_queue.entry_available_bit[load_queue_traverse_pointer])
                     cmpt_load_write_pointer[i] = 1'b1; 
+                if (!misprediction_load_queue.valid[load_queue_traverse_pointer])
+                    cmpt_load_read_pointer[i] = 1'b1; 
             end
 
             for (int i = 0; i < `LOAD_STORE_SIZE; i++)
             begin
-                store_queue_traverse_pointer = (curr_store_queue.read_pointer + i[`LOAD_STORE_SIZE_INDEX - 1 : 0]); 
+                store_queue_traverse_pointer = (curr_commit_state.store_commit_pointer + i[`LOAD_STORE_SIZE_INDEX - 1 : 0]); 
                 if (misprediction_store_queue.entry_available_bit[store_queue_traverse_pointer])
                     cmpt_store_write_pointer[i] = 1'b1; 
             end
 
-            if (load_queue_branch_dependant)
-                misprediction_load_queue.entry_write_pointer = new_load_write_pointer + curr_load_queue.read_pointer; 
 
-            if (store_queue_branch_dependant)
-                misprediction_store_queue.entry_write_pointer = new_store_write_pointer + curr_store_queue.read_pointer; 
+            misprediction_load_queue.entry_write_pointer = new_load_write_pointer + curr_commit_state.load_commit_pointer; 
+            misprediction_store_queue.entry_write_pointer = new_store_write_pointer + curr_commit_state.store_commit_pointer; 
+
+            misprediction_load_queue.read_pointer = new_load_read_pointer + curr_commit_state.load_commit_pointer; 
 
             if (hazard_signal_in.dc_miss) 
             begin
                 if (misprediction_store_queue.entry_available_bit[curr_store_queue.read_pointer] ||
                     misprediction_load_queue.entry_available_bit[curr_load_queue.read_pointer])
-                        misprediction_global_controls.invalidate_d_cache_output = 1'b1; 
-            end
-        end
-    end
-
-
-    always_comb
-    begin
-        misprediction_commit_state.ready_to_commit = curr_commit_state.ready_to_commit; 
-        misprediction_commit_state.entry_available_bit = curr_commit_state.entry_available_bit; 
-
-        if (hazard_signal_in.branch_miss)
-        begin
-            for (int i = 0; i < `ACTIVE_LIST_SIZE; i++)
-            begin
-                if (color_bit_with_ds == curr_active_state.color_bit[i])
-                begin
-                    if (branch_id_with_ds < i[`ACTIVE_LIST_SIZE_INDEX - 1 : 0])
-                    begin
-                        misprediction_commit_state.ready_to_commit[i] = 1'b0; 
-                        misprediction_commit_state.entry_available_bit[i] = 1'b1; 
-                    end
-
-                end
-                else 
-                begin
-                    if (branch_id_with_ds > i[`ACTIVE_LIST_SIZE_INDEX - 1 : 0])
-                    begin
-                        misprediction_commit_state.ready_to_commit[i] = 1'b0; 
-                        misprediction_commit_state.entry_available_bit[i] = 1'b1; 
-                    end
-                end
+                        invalidate_d_cache_output = 1'b1; 
             end
         end
     end

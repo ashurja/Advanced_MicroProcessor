@@ -1,15 +1,17 @@
 interface commit_state_ifc (); 
 
     logic [`ACTIVE_LIST_SIZE - 1 : 0] entry_available_bit; 
-	logic ready_to_commit[`ACTIVE_LIST_SIZE]; 
+	logic [`ACTIVE_LIST_SIZE - 1 : 0] ready_to_commit; 
 	logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] oldest_inst_pointer; 
 	logic [`PHYS_REG_NUM_INDEX - 1 : 0] free_tail_pointer; 
     logic [`BRANCH_NUM_INDEX - 1 : 0] branch_read_pointer; 
+    logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] load_commit_pointer; 
+    logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] store_commit_pointer; 
 
 	modport in (input ready_to_commit, oldest_inst_pointer, free_tail_pointer, 
-            entry_available_bit, branch_read_pointer);  
+            entry_available_bit, branch_read_pointer, load_commit_pointer, store_commit_pointer);  
 	modport out (output ready_to_commit, oldest_inst_pointer, free_tail_pointer,
-            entry_available_bit, branch_read_pointer);  
+            entry_available_bit, branch_read_pointer, load_commit_pointer, store_commit_pointer);  
 
 endinterface
 
@@ -75,11 +77,13 @@ module commit (
 
         if (!rst_n)
         begin
-            next_commit_state.ready_to_commit = '{default : 1'b0};
+            next_commit_state.ready_to_commit = '0;
             next_commit_state.oldest_inst_pointer = '0; 
             next_commit_state.free_tail_pointer = '0;  
             next_commit_state.branch_read_pointer = '0; 
             next_commit_state.entry_available_bit = {`ACTIVE_LIST_SIZE{1'b1}}; 
+            next_commit_state.load_commit_pointer = '0; 
+            next_commit_state.store_commit_pointer = '0; 
         end
         else 
         begin
@@ -88,6 +92,8 @@ module commit (
             next_commit_state.free_tail_pointer = curr_commit_state.free_tail_pointer; 
             next_commit_state.branch_read_pointer = curr_commit_state.branch_read_pointer; 
             next_commit_state.entry_available_bit = curr_commit_state.entry_available_bit; 
+            next_commit_state.load_commit_pointer = curr_commit_state.load_commit_pointer; 
+            next_commit_state.store_commit_pointer = curr_commit_state.store_commit_pointer; 
         end
 
         if (i_int_commit.valid) 
@@ -126,16 +132,18 @@ module commit (
             if (curr_active_state.is_load[curr_commit_state.oldest_inst_pointer])
             begin
                 o_commit_out.load_done = 1'b1; 
+                next_commit_state.load_commit_pointer = curr_commit_state.load_commit_pointer + 1'b1; 
                 simulation_verification.is_load = 1'b1; 
-                simulation_verification.mem_addr = curr_load_queue.mem_addr[curr_load_queue.read_pointer]; 
+                simulation_verification.mem_addr = curr_load_queue.mem_addr[curr_commit_state.load_commit_pointer]; 
             end
 
             if (curr_active_state.is_store[curr_commit_state.oldest_inst_pointer])
             begin
                 o_commit_out.store_done = 1'b1; 
+                next_commit_state.store_commit_pointer = curr_commit_state.store_commit_pointer + 1'b1; 
                 simulation_verification.is_store = 1'b1; 
-                simulation_verification.mem_addr = curr_store_queue.mem_addr[curr_store_queue.read_pointer]; 
-                simulation_verification.data = curr_store_queue.sw_data[curr_store_queue.read_pointer]; 
+                simulation_verification.mem_addr = curr_store_queue.mem_addr[curr_commit_state.store_commit_pointer]; 
+                simulation_verification.data = curr_store_queue.sw_data[curr_commit_state.store_commit_pointer]; 
             end
 
             next_commit_state.oldest_inst_pointer = curr_commit_state.oldest_inst_pointer + 1'b1; 

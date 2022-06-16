@@ -31,8 +31,6 @@ module scheduler (
 	inst_commit_ifc.out o_int_commit
 ); 
 
-    logic [`MEM_QUEUE_SIZE_INDEX - 1 : 0] mem_issue_queue_read_pointer; 
-
     logic alu_dispatch_match; 
     logic [`INT_QUEUE_SIZE_INDEX - 1 : 0] alu_dispatch_index;
 	logic [`INT_QUEUE_SIZE - 1 : 0] dispatch_alu;

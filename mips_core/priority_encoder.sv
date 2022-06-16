@@ -23,7 +23,7 @@ module priority_encoder #(
         else 
         begin
             i = 0;
-            while(x[i] == 0 && i < m - 1 ) i = i + 1;
+            while(x[i] == 0 && i < m) i = i + 1;
             y = i[n - 1 : 0];
         end
     end

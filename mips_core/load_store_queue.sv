@@ -3,7 +3,6 @@ interface load_queue_ifc();
     logic [`LOAD_STORE_SIZE - 1 : 0] valid; 
     logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] read_pointer; 
     logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] entry_write_pointer; 
-
     logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] active_list_id [`LOAD_STORE_SIZE]; 
     logic [`ADDR_WIDTH - 1 : 0] mem_addr[`LOAD_STORE_SIZE]; 
 
@@ -21,7 +20,6 @@ interface store_queue_ifc();
     logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] entry_write_pointer; 
     logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] active_list_id [`LOAD_STORE_SIZE]; 
 
-
     logic [`ADDR_WIDTH - 1 : 0] mem_addr[`LOAD_STORE_SIZE]; 
     logic [`DATA_WIDTH - 1 : 0] sw_data [`LOAD_STORE_SIZE];  
 
@@ -31,16 +29,10 @@ interface store_queue_ifc();
         active_list_id); 
 endinterface
 
-interface global_controls_ifc (); 
-    logic invalidate_d_cache_output; 
-
-    modport in ( input invalidate_d_cache_output); 
-    modport out ( output invalidate_d_cache_output);
-endinterface
-
 module load_store_queue (
     input rst_n,
     
+    hazard_signals_ifc.in hazard_signal_in, 
     scheduler_output_ifc.in i_scheduler,
     reg_file_output_ifc.in i_reg_data, 
     agu_output_ifc.in i_agu_output,
@@ -161,6 +153,22 @@ module load_store_queue (
                 next_store_queue.mem_addr[cmpt_entry_index] = i_agu_output.result[`ADDR_WIDTH - 1 : 0]; 
             end
         end
+
+        if (i_commit_out.queue_store && !hazard_signal_in.dc_miss)
+        begin
+            if (next_store_queue.valid[curr_store_queue.read_pointer])
+            begin
+                next_store_queue.read_pointer = curr_store_queue.read_pointer + 1'b1; 
+            end
+        end
+
+        if (i_commit_out.queue_load && !hazard_signal_in.dc_miss)
+        begin
+            if (next_load_queue.valid[curr_load_queue.read_pointer])
+            begin
+                next_load_queue.read_pointer = curr_load_queue.read_pointer + 1'b1; 
+            end
+        end
     end
 
 
@@ -186,7 +194,7 @@ module load_store_queue (
         cmpt_load_bypass = '0;
         store_traverse_pointer = '0; 
 
-        o_d_cache_input.valid = '0; 
+        o_d_cache_input.valid = 1'b0; 
         o_d_cache_input.mem_action = READ; 
         o_d_cache_input.addr = '0; 
         o_d_cache_input.addr_next = '0; 
@@ -195,6 +203,7 @@ module load_store_queue (
         o_d_cache_controls.bypass_possible = '0; 
         o_d_cache_controls.bypass_index = '0; 
         o_d_cache_controls.NOP = 1'b1;
+        o_d_cache_controls.dispatch_index = '0; 
 
         if (i_commit_out.queue_store)
         begin
@@ -208,6 +217,7 @@ module load_store_queue (
             o_d_cache_controls.bypass_possible = 1'b0; 
             o_d_cache_controls.bypass_index = '0; 
             o_d_cache_controls.NOP = 1'b0; 
+            o_d_cache_controls.dispatch_index = read_pointer; 
         end
         else if (i_commit_out.queue_load)
         begin
@@ -231,6 +241,7 @@ module load_store_queue (
             o_d_cache_controls.bypass_possible = '0; 
             o_d_cache_controls.bypass_index = bypass_index + curr_store_queue.read_pointer; 
             o_d_cache_controls.NOP = 1'b0;
+            o_d_cache_controls.dispatch_index = read_pointer;
         end
     end
 endmodule
