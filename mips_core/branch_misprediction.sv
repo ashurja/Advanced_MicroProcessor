@@ -24,6 +24,7 @@ module branch_misprediction  (
     memory_issue_queue_ifc.in curr_mem_queue, 
     load_queue_ifc.in curr_load_queue, 
     store_queue_ifc.in curr_store_queue, 
+    commit_state_ifc.in curr_commit_state, 
 
     rename_ifc.out misprediction_rename_state, 
     active_state_ifc.out misprediction_active_state, 
@@ -298,7 +299,7 @@ module branch_misprediction  (
                 load_queue_traverse_pointer = (curr_commit_state.load_commit_pointer + i[`LOAD_STORE_SIZE_INDEX - 1 : 0]); 
                 if (misprediction_load_queue.entry_available_bit[load_queue_traverse_pointer])
                     cmpt_load_write_pointer[i] = 1'b1; 
-                if (!misprediction_load_queue.valid[load_queue_traverse_pointer])
+                if (misprediction_load_queue.valid[load_queue_traverse_pointer])
                     cmpt_load_read_pointer[i] = 1'b1; 
             end
 

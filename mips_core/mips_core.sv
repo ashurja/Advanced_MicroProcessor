@@ -338,6 +338,8 @@ module mips_core (
 		.curr_load_queue, 
 		.curr_store_queue, 
 		.curr_mem_queue, 
+		.misprediction_load_queue, 
+		.misprediction_store_queue,
 		.i_commit_out(commit_out), 
 		.curr_rename_state,
 
@@ -420,6 +422,7 @@ module mips_core (
 		.curr_mem_queue, 
 		.curr_load_queue, 
 		.curr_store_queue, 
+		.curr_commit_state, 
 
 		.misprediction_rename_state, 
 		.misprediction_active_state, 

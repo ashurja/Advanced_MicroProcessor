@@ -207,10 +207,11 @@ module hazard_controller (
 	always_comb
 	begin
 		load_pc.we = dec_overload | ex_overload;
-		if (dec_overload)
-			load_pc.new_pc = dec_branch_decoded.target;
-		else
+		if (ex_overload)
 			load_pc.new_pc = ex_branch_result.recovery_target;
+		else
+			load_pc.new_pc = dec_branch_decoded.target;
+			
 	end
 
 

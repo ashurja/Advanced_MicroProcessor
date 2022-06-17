@@ -229,32 +229,31 @@ module data_struct_update (
 			curr_load_queue.active_list_id <= misprediction_load_queue.active_list_id; 
 			curr_load_queue.entry_available_bit <= misprediction_load_queue.entry_available_bit; 
 			curr_load_queue.entry_write_pointer <= misprediction_load_queue.entry_write_pointer; 
-			curr_load_queue.valid <= misprediction_load_queue.valid; 
 
 			curr_store_queue.active_list_id <= misprediction_store_queue.active_list_id; 
 			curr_store_queue.entry_available_bit <= misprediction_store_queue.entry_available_bit; 
 			curr_store_queue.entry_write_pointer <= misprediction_store_queue.entry_write_pointer; 
-			curr_store_queue.valid <= misprediction_store_queue.valid; 
 		end
 		else 
 		begin
 			curr_load_queue.active_list_id <= next_load_queue.active_list_id; 
 			curr_load_queue.entry_available_bit <= next_load_queue.entry_available_bit; 
 			curr_load_queue.entry_write_pointer <= next_load_queue.entry_write_pointer; 
-			curr_load_queue.valid <= next_load_queue.valid;
+
 
 			curr_store_queue.active_list_id <= next_store_queue.active_list_id; 
 			curr_store_queue.entry_available_bit <= next_store_queue.entry_available_bit; 
 			curr_store_queue.entry_write_pointer <= next_store_queue.entry_write_pointer; 
-			curr_store_queue.valid <= next_store_queue.valid; 
 		end
 
 		curr_load_queue.mem_addr <= next_load_queue.mem_addr; 
 		curr_load_queue.read_pointer <= next_load_queue.read_pointer; 
+		curr_load_queue.valid <= next_load_queue.valid;
 
 		curr_store_queue.sw_data <= next_store_queue.sw_data; 
 		curr_store_queue.mem_addr <= next_store_queue.mem_addr; 
 		curr_store_queue.read_pointer <= next_store_queue.read_pointer; 
+		curr_store_queue.valid <= next_store_queue.valid; 
 
 		if (i_d_cache_input.valid)
 		begin
@@ -272,13 +271,11 @@ module data_struct_update (
 		if (i_commit_out.load_done)
 		begin
 			curr_load_queue.entry_available_bit[curr_commit_state.load_commit_pointer] <= 1'b1; 
-			curr_load_queue.valid[curr_commit_state.load_commit_pointer] <= 1'b0; 
 		end
 
 		if (i_commit_out.store_done)
 		begin 
 			curr_store_queue.entry_available_bit[curr_commit_state.store_commit_pointer] <= 1'b1; 
-			curr_store_queue.valid[curr_commit_state.store_commit_pointer] <= 1'b0; 
 		end
 	end
 

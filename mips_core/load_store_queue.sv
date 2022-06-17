@@ -38,10 +38,12 @@ module load_store_queue (
     agu_output_ifc.in i_agu_output,
     load_queue_ifc.in curr_load_queue, 
     store_queue_ifc.in curr_store_queue, 
+    load_queue_ifc.in misprediction_load_queue, 
+    store_queue_ifc.in misprediction_store_queue, 
     memory_issue_queue_ifc.in curr_mem_queue, 
     commit_output_ifc.in i_commit_out, 
     rename_ifc.in curr_rename_state, 
-
+    
     load_queue_ifc.out next_load_queue, 
     store_queue_ifc.out next_store_queue,
     d_cache_controls_ifc.out o_d_cache_controls, 
@@ -94,19 +96,19 @@ module load_store_queue (
         end
         else 
         begin
-            next_load_queue.valid = curr_load_queue.valid; 
+            next_load_queue.valid = misprediction_load_queue.valid; 
             next_load_queue.mem_addr = curr_load_queue.mem_addr; 
             next_load_queue.active_list_id = curr_load_queue.active_list_id; 
             next_load_queue.entry_available_bit = curr_load_queue.entry_available_bit; 
-            next_load_queue.read_pointer = curr_load_queue.read_pointer; 
+            next_load_queue.read_pointer = misprediction_load_queue.read_pointer; 
             next_load_queue.entry_write_pointer = curr_load_queue.entry_write_pointer; 
 
-            next_store_queue.valid = curr_store_queue.valid; 
+            next_store_queue.valid = misprediction_store_queue.valid; 
             next_store_queue.sw_data = curr_store_queue.sw_data; 
             next_store_queue.mem_addr = curr_store_queue.mem_addr; 
             next_store_queue.active_list_id = curr_store_queue.active_list_id; 
             next_store_queue.entry_available_bit = curr_store_queue.entry_available_bit; 
-            next_store_queue.read_pointer = curr_store_queue.read_pointer; 
+            next_store_queue.read_pointer = misprediction_store_queue.read_pointer; 
             next_store_queue.entry_write_pointer = curr_store_queue.entry_write_pointer; 
         end
 
