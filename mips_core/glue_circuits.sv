@@ -122,8 +122,8 @@ endmodule
 module mem_stage_glue (
     load_queue_ifc.in curr_load_queue, 
     store_queue_ifc.in curr_store_queue, 
-	cache_output_ifc.in i_d_cache_output, 
-	d_cache_controls_ifc.in i_d_cache_controls, 
+	cache_output_ifc.in d_cache_output, 
+	d_cache_controls_ifc.in o_d_cache_controls, 
 	d_cache_input_ifc.in o_d_cache_input, 
 
 	write_back_ifc.out o_load_write_back, 
@@ -146,23 +146,23 @@ module mem_stage_glue (
 		begin
 			if (o_d_cache_input.mem_action == WRITE)
 			begin
-				o_done = i_d_cache_output.valid;   
+				o_done = d_cache_output.valid;   
 
-				o_mem_commit.valid = i_d_cache_output.valid;
-				o_mem_commit.active_list_id = curr_store_queue.active_list_id[i_d_cache_controls.dispatch_index]; 
+				o_mem_commit.valid = d_cache_output.valid;
+				o_mem_commit.active_list_id = curr_store_queue.active_list_id[o_d_cache_controls.dispatch_index]; 
 			end
 
 			else 
 			begin
-				o_done = (i_d_cache_controls.bypass_possible) ? 1'b1 : i_d_cache_output.valid; 
+				o_done = (o_d_cache_controls.bypass_possible) ? 1'b1 : d_cache_output.valid; 
 
-				o_load_write_back.valid = (i_d_cache_controls.bypass_possible) ? 1'b1 : i_d_cache_output.valid & !i_d_cache_controls.NOP;
-				o_load_write_back.uses_rw = curr_active_state.uses_rw[curr_load_queue.active_list_id[i_d_cache_controls.dispatch_index]]; 
-				o_load_write_back.rw_addr = curr_active_state.rw_addr[curr_load_queue.active_list_id[i_d_cache_controls.dispatch_index]]; 
-				o_load_write_back.rw_data = (i_d_cache_controls.bypass_possible) ? curr_store_queue.sw_data[i_d_cache_controls.bypass_index] : i_d_cache_output.data; 
+				o_load_write_back.valid = (o_d_cache_controls.bypass_possible) ? 1'b1 : d_cache_output.valid & !o_d_cache_controls.NOP;
+				o_load_write_back.uses_rw = curr_active_state.uses_rw[curr_load_queue.active_list_id[o_d_cache_controls.dispatch_index]]; 
+				o_load_write_back.rw_addr = curr_active_state.rw_addr[curr_load_queue.active_list_id[o_d_cache_controls.dispatch_index]]; 
+				o_load_write_back.rw_data = (o_d_cache_controls.bypass_possible) ? curr_store_queue.sw_data[o_d_cache_controls.bypass_index] : d_cache_output.data; 
 
 				o_mem_commit.valid = o_load_write_back.valid;
-				o_mem_commit.active_list_id = curr_load_queue.active_list_id[i_d_cache_controls.dispatch_index];
+				o_mem_commit.active_list_id = curr_load_queue.active_list_id[o_d_cache_controls.dispatch_index];
 			end
 		end
 	end

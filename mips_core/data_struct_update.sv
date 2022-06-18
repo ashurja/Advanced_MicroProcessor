@@ -105,29 +105,21 @@ module data_struct_update (
 		begin
 			curr_active_state.youngest_inst_pointer <= misprediction_active_state.youngest_inst_pointer; 
 			curr_active_state.global_color_bit <= misprediction_active_state.global_color_bit; 
-
-			curr_active_state.pc <= next_active_state.pc; 
-			curr_active_state.color_bit <= next_active_state.color_bit; 
-			curr_active_state.reclaim_list <= next_active_state.reclaim_list;
-			curr_active_state.is_load <= next_active_state.is_load; 
-			curr_active_state.is_store <= next_active_state.is_store; 
-			curr_active_state.uses_rw <= next_active_state.uses_rw;
-			curr_active_state.rw_addr <= next_active_state.rw_addr;
 		end
 
 		else 
 		begin
-			curr_active_state.reclaim_list <= next_active_state.reclaim_list;
-			curr_active_state.pc <= next_active_state.pc; 
 			curr_active_state.global_color_bit <= next_active_state.global_color_bit; 
-			curr_active_state.color_bit <= next_active_state.color_bit; 
-			curr_active_state.is_load <= next_active_state.is_load; 
-			curr_active_state.is_store <= next_active_state.is_store; 
-			curr_active_state.uses_rw <= next_active_state.uses_rw;
-			curr_active_state.rw_addr <= next_active_state.rw_addr;
 			curr_active_state.youngest_inst_pointer <= next_active_state.youngest_inst_pointer; 
 		end
-
+		
+		curr_active_state.pc <= next_active_state.pc; 
+		curr_active_state.color_bit <= next_active_state.color_bit; 
+		curr_active_state.reclaim_list <= next_active_state.reclaim_list;
+		curr_active_state.is_load <= next_active_state.is_load; 
+		curr_active_state.is_store <= next_active_state.is_store; 
+		curr_active_state.uses_rw <= next_active_state.uses_rw;
+		curr_active_state.rw_addr <= next_active_state.rw_addr;
 	end
 
 

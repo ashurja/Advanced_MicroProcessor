@@ -17,6 +17,9 @@ module branch_misprediction  (
 
     hazard_signals_ifc.in hazard_signal_in,
 
+    d_cache_controls_ifc.in o_d_cache_controls,
+    d_cache_input_ifc.in o_d_cache_input,
+
     branch_state_ifc.in curr_branch_state,
     rename_ifc.in curr_rename_state, 
     active_state_ifc.in curr_active_state,
@@ -133,7 +136,7 @@ module branch_misprediction  (
         if (hazard_signal_in.branch_miss)
         begin
             misprediction_active_state.youngest_inst_pointer = branch_id_with_ds + 1'b1; 
-            misprediction_active_state.global_color_bit = color_bit_with_ds; 
+            misprediction_active_state.global_color_bit = (branch_id_with_ds == `ACTIVE_LIST_SIZE - 1) ? !color_bit_with_ds : color_bit_with_ds; 
         end
     end
 
@@ -318,9 +321,10 @@ module branch_misprediction  (
 
             if (hazard_signal_in.dc_miss) 
             begin
-                if (misprediction_store_queue.entry_available_bit[curr_store_queue.read_pointer] ||
-                    misprediction_load_queue.entry_available_bit[curr_load_queue.read_pointer])
-                        invalidate_d_cache_output = 1'b1; 
+                if(o_d_cache_input.mem_action == READ)
+                begin
+                    invalidate_d_cache_output = misprediction_load_queue.entry_available_bit[o_d_cache_controls.dispatch_index]; 
+                end
             end
         end
     end

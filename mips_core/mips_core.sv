@@ -384,8 +384,8 @@ module mips_core (
 	mem_stage_glue MEM_GLUE (
 		.curr_load_queue, 
 		.curr_store_queue, 
-		.i_d_cache_output(d_cache_output), 
-		.i_d_cache_controls(o_d_cache_controls), 
+		.d_cache_output, 
+		.o_d_cache_controls, 
 		.o_d_cache_input,
 
 		.o_load_write_back(load_write_back), 
@@ -414,6 +414,8 @@ module mips_core (
 		.rst_n,
 
 		.hazard_signal_in(hazard_signals),
+		.o_d_cache_controls,
+		.o_d_cache_input,
 
 		.curr_branch_state,
 		.curr_rename_state, 
