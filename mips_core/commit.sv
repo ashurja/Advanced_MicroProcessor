@@ -18,18 +18,15 @@ endinterface
 interface commit_output_ifc (); 
 	logic reclaim_valid; 
     logic queue_store; 
-    logic queue_load; 
     logic load_done; 
     logic store_done; 
     logic branch_done; 
 
-	logic [`PHYS_REG_NUM_INDEX - 1 : 0] free_tail_pointer; 
-    logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] oldest_inst_pointer; 
 	logic [`PHYS_REG_NUM_INDEX - 1 : 0] reclaim_reg;
 
-	modport in (input reclaim_valid, load_done, store_done, queue_store, free_tail_pointer, reclaim_reg, oldest_inst_pointer, queue_load, 
+	modport in (input reclaim_valid, load_done, store_done, queue_store, reclaim_reg,
             branch_done);  
-	modport out (output reclaim_valid, load_done, store_done, queue_store, free_tail_pointer, reclaim_reg, oldest_inst_pointer, queue_load, 
+	modport out (output reclaim_valid, load_done, store_done, queue_store, reclaim_reg,
             branch_done);  
 
 endinterface
@@ -61,8 +58,6 @@ module commit (
         o_commit_out.load_done = 1'b0; 
         o_commit_out.store_done = 1'b0; 
         o_commit_out.branch_done = 1'b0; 
-        o_commit_out.free_tail_pointer = curr_commit_state.free_tail_pointer; 
-        o_commit_out.oldest_inst_pointer = curr_commit_state.oldest_inst_pointer; 
 
         simulation_verification.valid = 1'b0; 
         simulation_verification.uses_rw = 1'b0; 
@@ -152,7 +147,6 @@ module commit (
         end
 
         o_commit_out.queue_store = curr_active_state.is_store[next_commit_state.oldest_inst_pointer] ? 1'b1 : 1'b0; 
-        o_commit_out.queue_load = curr_active_state.is_load[next_commit_state.oldest_inst_pointer] ? 1'b1 : 1'b0;
     end
 
 endmodule

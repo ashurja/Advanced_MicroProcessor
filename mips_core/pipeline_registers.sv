@@ -135,6 +135,8 @@ module pr_e2m (
 			o_d_cache_input.addr <= '0;
 			o_d_cache_input.data <= '0;
 
+			o_d_cache_controls.valid <= 1'b0; 
+			o_d_cache_controls.mem_action <= READ; 
 			o_d_cache_controls.bypass_possible <= '0; 
 			o_d_cache_controls.bypass_index <= '0; 
 			o_d_cache_controls.NOP <= 1'b1; 
@@ -149,6 +151,8 @@ module pr_e2m (
 				o_d_cache_input.addr <= i_d_cache_input.addr;
 				o_d_cache_input.data <= i_d_cache_input.data;
 
+				o_d_cache_controls.valid <= i_d_cache_controls.valid; 
+				o_d_cache_controls.mem_action <= i_d_cache_controls.mem_action; 
 				o_d_cache_controls.bypass_possible <= i_d_cache_controls.bypass_possible;
 				o_d_cache_controls.bypass_index <= i_d_cache_controls.bypass_index; 
 				o_d_cache_controls.NOP <= i_d_cache_controls.NOP; 

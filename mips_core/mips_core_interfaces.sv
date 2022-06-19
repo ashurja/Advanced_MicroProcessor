@@ -69,12 +69,14 @@ interface cache_output_ifc ();
 endinterface
 
 interface d_cache_controls_ifc (); 
+	logic valid; 
+	mips_core_pkg::MemAccessType mem_action;
 	logic bypass_possible; 
 	logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] bypass_index; 
 	logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] dispatch_index; 
 	logic NOP; 
-	modport in (input bypass_possible, bypass_index, NOP, dispatch_index); 
-	modport out (output bypass_possible, bypass_index, NOP, dispatch_index); 
+	modport in (input valid, bypass_possible, bypass_index, NOP, dispatch_index, mem_action); 
+	modport out (output valid, bypass_possible, bypass_index, NOP, dispatch_index, mem_action); 
 endinterface
 
 interface branch_decoded_ifc ();

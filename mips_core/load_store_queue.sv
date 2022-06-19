@@ -34,12 +34,14 @@ module load_store_queue (
     
     hazard_signals_ifc.in hazard_signal_in, 
     scheduler_output_ifc.in i_scheduler,
+    commit_state_ifc.in curr_commit_state, 
     reg_file_output_ifc.in i_reg_data, 
     agu_output_ifc.in i_agu_output,
     load_queue_ifc.in curr_load_queue, 
     store_queue_ifc.in curr_store_queue, 
     load_queue_ifc.in misprediction_load_queue, 
     store_queue_ifc.in misprediction_store_queue, 
+    active_state_ifc.in curr_active_state, 
     memory_issue_queue_ifc.in curr_mem_queue, 
     commit_output_ifc.in i_commit_out, 
     rename_ifc.in curr_rename_state, 
@@ -156,19 +158,21 @@ module load_store_queue (
             end
         end
 
-        if (i_commit_out.queue_store && !hazard_signal_in.dc_miss)
-        begin
-            if (next_store_queue.valid[curr_store_queue.read_pointer])
+        if (!hazard_signal_in.dc_miss)
+        begin 
+            if (i_commit_out.queue_store)
             begin
-                next_store_queue.read_pointer = curr_store_queue.read_pointer + 1'b1; 
+                if (next_store_queue.valid[curr_store_queue.read_pointer])
+                begin
+                    next_store_queue.read_pointer = curr_store_queue.read_pointer + 1'b1; 
+                end
             end
-        end
-
-        if (i_commit_out.queue_load && !hazard_signal_in.dc_miss)
-        begin
-            if (next_load_queue.valid[curr_load_queue.read_pointer])
+            else
             begin
-                next_load_queue.read_pointer = curr_load_queue.read_pointer + 1'b1; 
+                if (next_load_queue.valid[curr_load_queue.read_pointer] & !halt_load)
+                begin
+                    next_load_queue.read_pointer = curr_load_queue.read_pointer + 1'b1; 
+                end
             end
         end
     end
@@ -176,8 +180,13 @@ module load_store_queue (
 
     logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] store_traverse_pointer;
     logic [`LOAD_STORE_SIZE - 1 : 0] cmpt_load_bypass; 
-    logic bypass_possible; 
-    logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] bypass_index; 
+    logic [`LOAD_STORE_SIZE - 1 : 0] cmpt_store_load_trap; 
+    logic halt_load; 
+    logic load_color_bit; 
+    logic store_color_bit; 
+
+    logic load_bypass_possible; 
+    logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] load_bypass_index; 
 
     priority_encoder# (
 		.m(`LOAD_STORE_SIZE),
@@ -185,65 +194,99 @@ module load_store_queue (
     ) load_bypass_retriever (
 		.x(cmpt_load_bypass),
 		.bottom_up(1'b0),
-		.valid_in(bypass_possible),
-		.y(bypass_index)
+		.valid_in(load_bypass_possible),
+		.y(load_bypass_index)
 	);
+
+
+   priority_encoder# (
+		.m(`LOAD_STORE_SIZE),
+		.n(`LOAD_STORE_SIZE_INDEX)
+   ) store_load_trap_checker (
+		.x(cmpt_store_load_trap),
+		.bottom_up(1'b1),
+		.valid_in(halt_load),
+		.y()
+	);
+
+    always_comb
+    begin
+        cmpt_load_bypass = '0;
+        cmpt_store_load_trap = '0; 
+        store_traverse_pointer = '0; 
+        load_color_bit = curr_active_state.color_bit[next_load_queue.active_list_id[curr_load_queue.read_pointer]]; 
+        store_color_bit = 1'b0; 
+
+        if (!i_commit_out.queue_store)
+        begin
+            for (int i = 0; i < `LOAD_STORE_SIZE; i++)
+            begin
+                store_traverse_pointer = curr_commit_state.store_commit_pointer + i[`LOAD_STORE_SIZE_INDEX - 1 : 0]; 
+                store_color_bit = curr_active_state.color_bit[next_store_queue.active_list_id[store_traverse_pointer]]; 
+                if (store_color_bit == load_color_bit)
+                begin
+                    if (next_store_queue.active_list_id[store_traverse_pointer] < next_load_queue.active_list_id[curr_load_queue.read_pointer])
+                    begin
+                        if (next_store_queue.mem_addr[store_traverse_pointer] == next_load_queue.mem_addr[curr_load_queue.read_pointer] &&
+                                next_store_queue.valid[store_traverse_pointer])
+                            cmpt_load_bypass[i] = 1'b1;
+                        if (!next_store_queue.entry_available_bit[store_traverse_pointer] && !next_store_queue.valid[store_traverse_pointer])
+                            cmpt_store_load_trap[i] = 1'b1; 
+                    end                
+                end
+                else 
+                begin
+                    if (next_store_queue.active_list_id[store_traverse_pointer] > next_load_queue.active_list_id[curr_load_queue.read_pointer])
+                    begin
+                        if (next_store_queue.mem_addr[store_traverse_pointer] == next_load_queue.mem_addr[curr_load_queue.read_pointer] &&
+                                next_store_queue.valid[store_traverse_pointer])
+                            cmpt_load_bypass[i] = 1'b1;
+                        if (!next_store_queue.entry_available_bit[store_traverse_pointer] && !next_store_queue.valid[store_traverse_pointer])
+                            cmpt_store_load_trap[i] = 1'b1; 
+                    end       
+                end
+            end
+        end
+    end
 
 
     always_comb
     begin : dispatch_to_cache
-        read_pointer = '0; 
-        cmpt_load_bypass = '0;
-        store_traverse_pointer = '0; 
-
-        o_d_cache_input.valid = 1'b0; 
-        o_d_cache_input.mem_action = READ; 
-        o_d_cache_input.addr = '0; 
-        o_d_cache_input.addr_next = '0; 
-        o_d_cache_input.data = '0; 
-
-        o_d_cache_controls.bypass_possible = '0; 
-        o_d_cache_controls.bypass_index = '0; 
-        o_d_cache_controls.NOP = 1'b1;
-        o_d_cache_controls.dispatch_index = '0; 
 
         if (i_commit_out.queue_store)
         begin
             read_pointer = curr_store_queue.read_pointer;
+
             o_d_cache_input.valid = next_store_queue.valid[read_pointer]; 
             o_d_cache_input.mem_action = WRITE; 
             o_d_cache_input.addr = next_store_queue.mem_addr[read_pointer]; 
             o_d_cache_input.addr_next = next_store_queue.mem_addr[read_pointer]; 
             o_d_cache_input.data = next_store_queue.sw_data[read_pointer]; 
 
+            o_d_cache_controls.valid = next_store_queue.valid[read_pointer]; 
+            o_d_cache_controls.mem_action = WRITE;
             o_d_cache_controls.bypass_possible = 1'b0; 
             o_d_cache_controls.bypass_index = '0; 
             o_d_cache_controls.NOP = 1'b0; 
             o_d_cache_controls.dispatch_index = read_pointer; 
         end
-        else if (i_commit_out.queue_load)
+        else 
         begin
             read_pointer = curr_load_queue.read_pointer; 
 
-            // for (int i = 0; i < `LOAD_STORE_SIZE; i++)
-            // begin
-            //     store_traverse_pointer = curr_store_queue.read_pointer + i[`LOAD_STORE_SIZE_INDEX - 1 : 0]; 
-            //     if (next_store_queue.valid[store_traverse_pointer] && 
-            //             next_store_queue.pc[store_traverse_pointer] < next_load_queue.pc[read_pointer] &&
-            //                 next_store_queue.mem_addr[store_traverse_pointer] == next_load_queue.mem_addr[read_pointer])
-            //         cmpt_load_bypass[i] = 1'b1;
-            // end
-
-            o_d_cache_input.valid = next_load_queue.valid[read_pointer] & !bypass_possible; 
+            o_d_cache_input.valid = next_load_queue.valid[read_pointer] & !load_bypass_possible & !halt_load; 
             o_d_cache_input.mem_action = READ; 
             o_d_cache_input.addr = next_load_queue.mem_addr[read_pointer]; 
             o_d_cache_input.addr_next = next_load_queue.mem_addr[read_pointer]; 
             o_d_cache_input.data = '0; 
 
-            o_d_cache_controls.bypass_possible = '0; 
-            o_d_cache_controls.bypass_index = bypass_index + curr_store_queue.read_pointer; 
+            o_d_cache_controls.valid = next_load_queue.valid[read_pointer] & !halt_load; 
+            o_d_cache_controls.mem_action = READ; 
+            o_d_cache_controls.bypass_possible = load_bypass_possible; 
+            o_d_cache_controls.bypass_index = load_bypass_index + curr_commit_state.store_commit_pointer;  
             o_d_cache_controls.NOP = 1'b0;
             o_d_cache_controls.dispatch_index = read_pointer;
         end
     end
+
 endmodule

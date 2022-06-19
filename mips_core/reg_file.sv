@@ -77,7 +77,7 @@ module reg_file (
 	always_comb
 	begin
 		active_list_hazard = curr_commit_state.entry_available_bit == '0;  
-		free_list_hazard = (curr_rename_state.free_head_pointer == commit_output_in.free_tail_pointer && i_decoded.uses_rw); 
+		free_list_hazard = (curr_rename_state.free_head_pointer == curr_commit_state.free_tail_pointer && i_decoded.uses_rw); 
 		reg_jump_hazard = i_decoded.is_jump_reg & !curr_rename_state.m_reg_file_valid_bit[curr_rename_state.rename_buffer[i_decoded.rs_addr]]; 
 		branch_hazard = (curr_branch_state.valid == {`BRANCH_NUM{1'b1}}) & i_decoded.is_branch_jump & !i_decoded.is_jump; 
 		load_store_hazard = load_store_queue_full & i_decoded.is_mem_access; 
@@ -187,7 +187,7 @@ module reg_file (
 
 		if (commit_output_in.reclaim_valid)
 		begin
-			next_rename_state.free_list[commit_output_in.free_tail_pointer] = commit_output_in.reclaim_reg; 
+			next_rename_state.free_list[curr_commit_state.free_tail_pointer] = commit_output_in.reclaim_reg; 
 		end
 
 	end

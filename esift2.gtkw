@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Wed Jun 15 05:35:24 2022
+[*] Sat Jun 18 01:13:58 2022
 [*]
 [dumpfile] "/Users/jamshedashurov/Desktop/CSE148/CSE148/baseline/mips_cpu/simx.fst"
-[dumpfile_mtime] "Sun Jun 12 18:18:37 2022"
-[dumpfile_size] 278937
-[savefile] "/Users/jamshedashurov/Desktop/CSE148/CSE148/baseline/mips_cpu/1_wave.gtkw"
-[timestart] 576070
-[size] 1394 822
-[pos] 1745 151
-*-5.000000 576155 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[dumpfile_mtime] "Sat Jun 18 00:38:06 2022"
+[dumpfile_size] 73660644
+[savefile] "/Users/jamshedashurov/Desktop/CSE148/CSE148/baseline/mips_cpu/esift2.gtkw"
+[timestart] 47183458
+[size] 1000 600
+[pos] -1 -1
+*-5.000000 47183665 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.mips_core.
 [treeopen] TOP.mips_core.AGU.
@@ -24,22 +24,22 @@
 [treeopen] TOP.mips_core.PR_F2D.
 [treeopen] TOP.mips_core.REG_FILE.
 [sst_width] 236
-[signals_width] 340
+[signals_width] 403
 [sst_expanded] 1
-[sst_vpaned_height] 528
+[sst_vpaned_height] 366
 @200
 -Fetch
 @22
 TOP.mips_core.FETCH_UNIT.o_pc_current.pc[25:0]
 TOP.mips_core.FETCH_UNIT.o_pc_next.pc[25:0]
-@201
--
 @200
+-
 -Decode
 @100000028
 TOP.mips_core.DECODER.out.alu_ctl[4:0]
 @22
 TOP.mips_core.DECODER.i_pc.pc[25:0]
+TOP.mips_core.PR_F2D.o_inst.data[31:0]
 @24
 TOP.mips_core.DECODER.out.valid
 @22
@@ -61,12 +61,10 @@ TOP.mips_core.DECODER.out.uses_rw
 @200
 -
 @24
-TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_active_state.youngest_inst_pointer[7:0]
-TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_commit_state.oldest_inst_pointer[7:0]
+TOP.mips_core.COMMIT.curr_active_state.youngest_inst_pointer[5:0]
+TOP.mips_core.COMMIT.curr_commit_state.oldest_inst_pointer[5:0]
 TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_rename_state.free_head_pointer[5:0]
 TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_commit_state.free_tail_pointer[5:0]
-TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_commit_state.branch_read_pointer[6:0]
-TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_branch_state.write_pointer[6:0]
 TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_active_state.global_color_bit
 @22
 TOP.mips_core.LOAD_STORE_QUEUE.curr_rename_state.m_reg_file_valid_bit[63:0]
@@ -77,7 +75,6 @@ TOP.mips_core.REG_FILE.commit_output_in.reclaim_reg[5:0]
 @200
 -
 @24
-TOP.mips_core.DATA_STRCUTURES_UPDATE.hazard_signal_in.branch_id[7:0]
 TOP.mips_core.DATA_STRCUTURES_UPDATE.hazard_signal_in.branch_miss
 @28
 TOP.mips_core.HAZARD_CONTROLLER.issue_queue_full
@@ -98,7 +95,6 @@ TOP.mips_core.COMMIT.curr_rename_state.branch_decoded_hazard
 @200
 -
 @24
-TOP.mips_core.BRANCH_MISPREDICTION.branch_id_with_ds[7:0]
 TOP.mips_core.BRANCH_MISPREDICTION.color_bit_with_ds
 @200
 -
@@ -108,8 +104,6 @@ TOP.mips_core.BRANCH_MISPREDICTION.color_bit_with_ds
 #{TOP.mips_core.ISSUE.issue_in.valid[0:1]} TOP.mips_core.ISSUE.issue_in.valid[0] TOP.mips_core.ISSUE.issue_in.valid[1]
 #{TOP.mips_core.ISSUE.issue_in.is_branch[0:1]} TOP.mips_core.ISSUE.issue_in.is_branch[0] TOP.mips_core.ISSUE.issue_in.is_branch[1]
 @24
-TOP.mips_core.ISSUE.issue_in.active_list_id[0][7:0]
-TOP.mips_core.ISSUE.issue_in.active_list_id[1][7:0]
 TOP.mips_core.ISSUE.issue_in.phys_rs[0][5:0]
 @22
 TOP.mips_core.ISSUE.issue_in.phys_rs[1][5:0]
@@ -125,20 +119,12 @@ TOP.mips_core.ISSUE.issue_in.phys_rt[1][5:0]
 @24
 TOP.mips_core.MEM_GLUE.o_load_write_back.valid
 TOP.mips_core.MEM_GLUE.o_load_write_back.rw_addr[5:0]
-TOP.mips_core.BRANCH_MISPREDICTION.misprediction_idx[6:0]
 @200
 -
 -
 @22
 TOP.mips_core.AGU.in.op2[31:0]
 TOP.mips_core.AGU.in.op1[31:0]
-@28
-TOP.mips_core.MEM_GLUE.i_d_cache_output.valid
-@22
-TOP.mips_core.MEM_GLUE.i_d_cache_output.data[31:0]
-@28
-TOP.mips_core.MEM_GLUE.curr_global_controls.invalidate_d_cache_output
-@22
 TOP.mips_core.AGU.out.result[31:0]
 @28
 TOP.mips_core.AGU.out.valid
@@ -171,7 +157,9 @@ TOP.mips_core.COMMIT.o_commit_out.queue_store
 -
 @24
 TOP.mips_core.COMMIT.simulation_verification.valid
+@23
 TOP.mips_core.COMMIT.simulation_verification.data[31:0]
+@24
 TOP.mips_core.COMMIT.simulation_verification.is_load
 TOP.mips_core.COMMIT.simulation_verification.is_store
 @22

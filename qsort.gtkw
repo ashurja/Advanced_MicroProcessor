@@ -1,21 +1,22 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Sat Jun 18 00:30:47 2022
+[*] Sun Jun 19 01:23:24 2022
 [*]
 [dumpfile] "/Users/jamshedashurov/Desktop/CSE148/CSE148/baseline/mips_cpu/simx.fst"
-[dumpfile_mtime] "Fri Jun 17 23:38:00 2022"
-[dumpfile_size] 14213433
+[dumpfile_mtime] "Sun Jun 19 00:31:46 2022"
+[dumpfile_size] 183095471
 [savefile] "/Users/jamshedashurov/Desktop/CSE148/CSE148/baseline/mips_cpu/qsort.gtkw"
-[timestart] 5203641
+[timestart] 0
 [size] 2287 1309
-[pos] 1416 -1
-*-6.000000 5203945 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[pos] 1415 -1
+*-5.000000 135 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.mips_core.
 [treeopen] TOP.mips_core.AGU.
 [treeopen] TOP.mips_core.ALU.
 [treeopen] TOP.mips_core.BRANCH_MISPREDICTION.
 [treeopen] TOP.mips_core.COMMIT.
+[treeopen] TOP.mips_core.D_CACHE.
 [treeopen] TOP.mips_core.DECODER.
 [treeopen] TOP.mips_core.FETCH_UNIT.
 [treeopen] TOP.mips_core.FETCH_UNIT.o_pc_current.
@@ -29,7 +30,7 @@
 [sst_width] 292
 [signals_width] 430
 [sst_expanded] 1
-[sst_vpaned_height] 452
+[sst_vpaned_height] 1073
 @200
 -Fetch
 @22
@@ -289,6 +290,12 @@ TOP.mips_core.LOAD_STORE_QUEUE.curr_load_queue.mem_addr[0][25:0]
 TOP.mips_core.LOAD_STORE_QUEUE.curr_load_queue.mem_addr[1][25:0]
 TOP.mips_core.LOAD_STORE_QUEUE.curr_load_queue.mem_addr[2][25:0]
 TOP.mips_core.LOAD_STORE_QUEUE.curr_load_queue.mem_addr[3][25:0]
+@28
+TOP.mips_core.LOAD_STORE_QUEUE.load_bypass_possible
+@22
+TOP.mips_core.LOAD_STORE_QUEUE.cmpt_load_bypass[3:0]
+@28
+TOP.mips_core.LOAD_STORE_QUEUE.load_bypass_index[1:0]
 @200
 -
 -STORE QUEUE
@@ -314,18 +321,39 @@ TOP.mips_core.LOAD_STORE_QUEUE.curr_store_queue.sw_data[2][31:0]
 TOP.mips_core.LOAD_STORE_QUEUE.curr_store_queue.sw_data[3][31:0]
 @200
 -
+@28
+TOP.mips_core.LOAD_STORE_QUEUE.o_d_cache_input.valid
+@100000028
+TOP.mips_core.LOAD_STORE_QUEUE.o_d_cache_input.mem_action
+@22
+TOP.mips_core.LOAD_STORE_QUEUE.o_d_cache_input.data[31:0]
+TOP.mips_core.LOAD_STORE_QUEUE.o_d_cache_input.addr[25:0]
+TOP.mips_core.LOAD_STORE_QUEUE.o_d_cache_input.addr_next[25:0]
+@28
+TOP.mips_core.LOAD_STORE_QUEUE.o_d_cache_controls.valid
+@24
+TOP.mips_core.LOAD_STORE_QUEUE.o_d_cache_controls.dispatch_index[1:0]
+@200
 -D_cache
 @28
-TOP.mips_core.MEM_GLUE.o_d_cache_input.valid
+TOP.mips_core.D_CACHE.in.valid
 @100000028
-TOP.mips_core.MEM_GLUE.o_d_cache_input.mem_action
+TOP.mips_core.D_CACHE.in.mem_action
 @22
-TOP.mips_core.MEM_GLUE.o_d_cache_input.data[31:0]
-TOP.mips_core.MEM_GLUE.o_d_cache_input.addr[25:0]
+TOP.mips_core.D_CACHE.in.data[31:0]
+TOP.mips_core.D_CACHE.in.addr[25:0]
+TOP.mips_core.D_CACHE.in.addr_next[25:0]
 @28
+TOP.mips_core.MEM_GLUE.o_d_cache_controls.valid
+@100000028
+TOP.mips_core.MEM_GLUE.o_d_cache_controls.mem_action
+@25
+TOP.mips_core.MEM_GLUE.o_d_cache_controls.dispatch_index[1:0]
+@28
+TOP.mips_core.MEM_GLUE.o_d_cache_controls.bypass_possible
+TOP.mips_core.MEM_GLUE.o_d_cache_controls.bypass_index[1:0]
 TOP.mips_core.MEM_GLUE.d_cache_output.valid
 @22
-TOP.mips_core.MEM_GLUE.o_d_cache_input.addr_next[25:0]
 TOP.mips_core.MEM_GLUE.d_cache_output.data[31:0]
 @28
 TOP.mips_core.MEM_GLUE.o_load_write_back.valid
@@ -345,7 +373,6 @@ TOP.mips_core.COMMIT.next_commit_state.ready_to_commit[63:0]
 @24
 TOP.mips_core.COMMIT.curr_commit_state.oldest_inst_pointer[5:0]
 @28
-TOP.mips_core.COMMIT.o_commit_out.queue_load
 TOP.mips_core.COMMIT.o_commit_out.queue_store
 @200
 -Int_commit

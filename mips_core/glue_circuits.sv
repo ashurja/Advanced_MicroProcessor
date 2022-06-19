@@ -124,7 +124,6 @@ module mem_stage_glue (
     store_queue_ifc.in curr_store_queue, 
 	cache_output_ifc.in d_cache_output, 
 	d_cache_controls_ifc.in o_d_cache_controls, 
-	d_cache_input_ifc.in o_d_cache_input, 
 
 	write_back_ifc.out o_load_write_back, 
 	inst_commit_ifc.out o_mem_commit,
@@ -142,9 +141,9 @@ module mem_stage_glue (
 		o_load_write_back.rw_addr = '0; 
 		o_load_write_back.rw_data = '0; 
 
-		if (o_d_cache_input.valid)
+		if (o_d_cache_controls.valid)
 		begin
-			if (o_d_cache_input.mem_action == WRITE)
+			if (o_d_cache_controls.mem_action == WRITE)
 			begin
 				o_done = d_cache_output.valid;   
 
@@ -156,7 +155,7 @@ module mem_stage_glue (
 			begin
 				o_done = (o_d_cache_controls.bypass_possible) ? 1'b1 : d_cache_output.valid; 
 
-				o_load_write_back.valid = (o_d_cache_controls.bypass_possible) ? 1'b1 : d_cache_output.valid & !o_d_cache_controls.NOP;
+				o_load_write_back.valid = (o_d_cache_controls.NOP) ? 1'b0 : d_cache_output.valid | o_d_cache_controls.bypass_possible;
 				o_load_write_back.uses_rw = curr_active_state.uses_rw[curr_load_queue.active_list_id[o_d_cache_controls.dispatch_index]]; 
 				o_load_write_back.rw_addr = curr_active_state.rw_addr[curr_load_queue.active_list_id[o_d_cache_controls.dispatch_index]]; 
 				o_load_write_back.rw_data = (o_d_cache_controls.bypass_possible) ? curr_store_queue.sw_data[o_d_cache_controls.bypass_index] : d_cache_output.data; 

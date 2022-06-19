@@ -4,7 +4,7 @@ module data_struct_update (
 
 	hazard_signals_ifc.in hazard_signal_in, 
 
-	d_cache_input_ifc.in i_d_cache_input, 
+	d_cache_controls_ifc.in i_d_cache_controls, 
 	scheduler_output_ifc.in i_scheduler, 
 
 	commit_output_ifc.in i_commit_out, 
@@ -247,14 +247,9 @@ module data_struct_update (
 		curr_store_queue.read_pointer <= next_store_queue.read_pointer; 
 		curr_store_queue.valid <= next_store_queue.valid; 
 
-		if (i_d_cache_input.valid)
+		if (!hazard_signal_in.dc_miss && i_d_cache_controls.valid)
 		begin
-			if (!i_d_cache_input.mem_action && !hazard_signal_in.dc_miss)
-			begin
-				curr_store_queue.valid[curr_store_queue.read_pointer] <= 1'b0;
-			end
-
-			if (i_d_cache_input.mem_action && !hazard_signal_in.dc_miss)
+			if (i_d_cache_controls.mem_action == READ)
 			begin
 				curr_load_queue.valid[curr_load_queue.read_pointer] <= 1'b0; 
 			end
@@ -268,6 +263,7 @@ module data_struct_update (
 		if (i_commit_out.store_done)
 		begin 
 			curr_store_queue.entry_available_bit[curr_commit_state.store_commit_pointer] <= 1'b1; 
+			curr_store_queue.valid[curr_commit_state.store_commit_pointer] <= 1'b0;
 		end
 	end
 

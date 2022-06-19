@@ -335,6 +335,7 @@ module mips_core (
 		.i_scheduler(scheduler_out),
 		.i_reg_data(reg_file_out), 
 		.i_agu_output(agu_output), 
+		.curr_active_state,
 		.curr_load_queue, 
 		.curr_store_queue, 
 		.curr_mem_queue, 
@@ -342,6 +343,7 @@ module mips_core (
 		.misprediction_store_queue,
 		.i_commit_out(commit_out), 
 		.curr_rename_state,
+		.curr_commit_state,
 
 		.next_load_queue, 
 		.next_store_queue, 
@@ -359,11 +361,11 @@ module mips_core (
 
 		.invalidate_d_cache_output, 
 		.hazard_signal_in(hazard_signals), 
-		.i_d_cache_input(i_d_cache_input),
-		.i_d_cache_controls(i_d_cache_controls), 
+		.i_d_cache_input,
+		.i_d_cache_controls, 
 
-		.o_d_cache_input(o_d_cache_input),
-		.o_d_cache_controls(o_d_cache_controls)
+		.o_d_cache_input,
+		.o_d_cache_controls
 	); 
 	
 	
@@ -386,7 +388,6 @@ module mips_core (
 		.curr_store_queue, 
 		.d_cache_output, 
 		.o_d_cache_controls, 
-		.o_d_cache_input,
 
 		.o_load_write_back(load_write_back), 
 		.o_mem_commit(mem_commit), 
@@ -443,7 +444,7 @@ module mips_core (
 
 		.hazard_signal_in(hazard_signals), 
 
-		.i_d_cache_input,
+		.i_d_cache_controls,
 		.i_scheduler(scheduler_out),
 		.i_commit_out(commit_out), 
 		.i_load_write_back(load_write_back),
