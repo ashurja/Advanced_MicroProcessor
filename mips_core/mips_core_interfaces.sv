@@ -19,12 +19,13 @@ interface active_state_ifc ();
 	logic uses_rw [`ACTIVE_LIST_SIZE]; 
 	logic is_store [`ACTIVE_LIST_SIZE];
 	logic is_load [`ACTIVE_LIST_SIZE];  
+	mips_core_pkg::AluCtl alu_ctl[`ACTIVE_LIST_SIZE];
 	logic [`PHYS_REG_NUM_INDEX - 1 : 0] rw_addr[`ACTIVE_LIST_SIZE]; 
 	logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] youngest_inst_pointer; 
 
-	modport in (input reclaim_list, uses_rw, rw_addr, is_store,
+	modport in (input reclaim_list, uses_rw, rw_addr, is_store, alu_ctl,
 		youngest_inst_pointer, is_load, pc, color_bit, global_color_bit); 
-	modport out (output reclaim_list, uses_rw, rw_addr, is_store,
+	modport out (output reclaim_list, uses_rw, rw_addr, is_store, alu_ctl,
 		youngest_inst_pointer, is_load, pc, color_bit, global_color_bit); 
 endinterface
 
@@ -150,15 +151,18 @@ interface hazard_control_ifc ();
 endinterface
 
 interface simulation_verification_ifc (); 
-	logic valid; 
-	logic [`ADDR_WIDTH - 1 : 0] pc; 
-	logic is_store; 
-	logic is_load; 
-	logic [`ADDR_WIDTH - 1 : 0] mem_addr; 
-	logic uses_rw; 
-	logic [`REG_NUM_INDEX - 1 : 0] rw_addr; 
-	logic [`DATA_WIDTH - 1 : 0] data; 
-
-	modport in (input valid, pc, uses_rw, rw_addr, data, is_load, is_store, mem_addr); 
-	modport out (output valid, pc, uses_rw, rw_addr, data, is_load, is_store, mem_addr); 
+	logic [`COMMIT_WINDOW_SIZE - 1 : 0] valid; 
+	logic signed [`DATA_WIDTH - 1 : 0] op2 [`COMMIT_WINDOW_SIZE];
+	logic [`ADDR_WIDTH - 1 : 0] pc [`COMMIT_WINDOW_SIZE]; 
+	logic [`COMMIT_WINDOW_SIZE - 1 : 0] is_store; 
+	logic [`COMMIT_WINDOW_SIZE - 1 : 0] is_load; 
+	logic [`ADDR_WIDTH - 1 : 0] mem_addr [`COMMIT_WINDOW_SIZE]; 
+	logic [`COMMIT_WINDOW_SIZE - 1 : 0]uses_rw; 
+	logic [`REG_NUM_INDEX - 1 : 0] rw_addr [`COMMIT_WINDOW_SIZE]; 
+	logic [`DATA_WIDTH - 1 : 0] data [`COMMIT_WINDOW_SIZE]; 
+	logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] active_list_id [`COMMIT_WINDOW_SIZE]; 
+	modport in (input valid, pc, uses_rw, rw_addr, data, is_load, is_store, mem_addr, 
+		active_list_id, op2);  
+	modport out (output valid, pc, uses_rw, rw_addr, data, is_load, is_store, mem_addr, 
+		active_list_id, op2);  
 endinterface

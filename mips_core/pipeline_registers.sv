@@ -65,7 +65,6 @@ module pr_d2i (
 			o_decode_pass_through.phys_rs_valid <= '{default: 0}; 
 			o_decode_pass_through.phys_rt <= '{default: 0}; 
 			o_decode_pass_through.phys_rt_valid <= '{default: 0}; 
-			o_decode_pass_through.alu_ctl <= '{default: 0}; 
 			o_decode_pass_through.uses_rs <= '{default: 0};  
 			o_decode_pass_through.uses_rt <= '{default: 0}; 
 			o_decode_pass_through.uses_immediate <= '{default: 0}; 
@@ -86,7 +85,6 @@ module pr_d2i (
 				o_decode_pass_through.phys_rs_valid <= i_decode_pass_through.phys_rs_valid;
 				o_decode_pass_through.phys_rt <= i_decode_pass_through.phys_rt;
 				o_decode_pass_through.phys_rt_valid <= i_decode_pass_through.phys_rt_valid; 
-				o_decode_pass_through.alu_ctl <= i_decode_pass_through.alu_ctl; 
 				o_decode_pass_through.uses_rs <= i_decode_pass_through.uses_rs; 
 				o_decode_pass_through.uses_rt <= i_decode_pass_through.uses_rt;
 				o_decode_pass_through.uses_immediate <= i_decode_pass_through.uses_immediate;
@@ -106,9 +104,9 @@ endmodule
 module pr_e2m (
 	input clk,    // Clock
 	input rst_n,  // Synchronous reset active low
-	input invalidate_d_cache_output, 
 
 	hazard_signals_ifc.in hazard_signal_in, 
+	misprediction_output_ifc.in misprediction_out, 
 
 	d_cache_input_ifc.in  i_d_cache_input,
 	d_cache_controls_ifc.in  i_d_cache_controls,
@@ -159,7 +157,7 @@ module pr_e2m (
 				o_d_cache_controls.dispatch_index <= i_d_cache_controls.dispatch_index; 
 			end
 
-			if (invalidate_d_cache_output)
+			if (misprediction_out.invalidate_d_cache_output)
 				o_d_cache_controls.NOP <= 1'b1; 
 		end
 	end

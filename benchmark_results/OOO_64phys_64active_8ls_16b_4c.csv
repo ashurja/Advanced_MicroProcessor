@@ -1,0 +1,14 @@
+Benchmark             ,esift2          ,nqueens         ,qsort          ,coin
+CPI                   ,       1.1615   ,       1.36323  ,       1.72259 ,        1.02378
+Cycle_count           , 4713689        , 1315446        , 6536201       , 43821240
+dc_miss               ,     391        ,      47        ,    7819       ,       16
+dec_overload          ,  581682        ,  167506        ,  996977       ,  7327969
+delay_slot_miss       ,       1        ,       1        ,       2       ,        1
+ex_overload           ,  106500        ,   63740        ,  512983       ,   289701
+ic_miss               ,      22        ,      60        ,      30       ,       26
+Instruction_count     , 4058281        ,  964949        , 3794393       , 42803373
+IPC                   ,       0.860956 ,       0.733553 ,       0.58052 ,        0.976772
+is_branch             ,  476523        ,  160661        ,  865688       ,  7269774
+issue_queue_full      ,                ,       2        ,   13088       ,         
+load_store_queue_full ,     391        ,    8427        ,    1091       ,       14
+Total_time            ,47136895        ,13154465        ,65362015       ,438212405

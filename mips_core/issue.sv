@@ -8,8 +8,6 @@ interface issue_input_ifc ();
 	logic [`PHYS_REG_NUM_INDEX - 1 : 0] phys_rt [`ISSUE_SIZE];  
 	logic phys_rt_valid [`ISSUE_SIZE];  
 
-	mips_core_pkg::AluCtl alu_ctl [`ISSUE_SIZE]; 
-
 	logic uses_rs [`ISSUE_SIZE];  
 	logic uses_rt [`ISSUE_SIZE];  
 	logic uses_immediate [`ISSUE_SIZE];  
@@ -26,11 +24,11 @@ interface issue_input_ifc ();
 	logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] active_list_id [`ISSUE_SIZE];  
 
 	modport in (input valid, phys_rs, phys_rs_valid, phys_rt, phys_rt_valid, 
-				alu_ctl, uses_rs, uses_rt, uses_immediate, 
+				uses_rs, uses_rt, uses_immediate, 
 				immediate, is_branch, prediction, recovery_target, 
 				is_mem_access, mem_action, active_list_id); 
 	modport out (output valid, phys_rs, phys_rs_valid, phys_rt, phys_rt_valid, 
-				alu_ctl, uses_rs, uses_rt, uses_immediate, 
+				uses_rs, uses_rt, uses_immediate, 
 				immediate, is_branch, prediction, recovery_target, 
 				is_mem_access, mem_action, active_list_id); 
 endinterface
@@ -94,7 +92,9 @@ endinterface
 
 
 module issue (
+    input clk, 
     input rst_n, 
+    input logic front_pipeline_halt, 
 
     issue_input_ifc.in issue_in,
 	memory_issue_queue_ifc.in curr_mem_queue,
@@ -108,9 +108,11 @@ module issue (
     integer_issue_queue_ifc.out next_int_queue,
 	branch_state_ifc.out next_branch_state,
     
-    output logic issue_queue_full
+    output logic issue_hazard
 
 ); 
+    logic issue_queue_full; 
+    logic branch_hazard; 
 
 	logic [`INT_QUEUE_SIZE_INDEX - 1 : 0] int_queue_insert_index [`ISSUE_SIZE];
     logic [`MEM_QUEUE_SIZE_INDEX - 1 : 0] mem_queue_insert_index; 
@@ -152,13 +154,16 @@ module issue (
 
 	always_comb 
     begin
-
+        branch_hazard = 1'b0; 
         issue_queue_full = 1'b0; 
         int_queue_insert_index[0] = int_queue_insert_index_1; 
         int_queue_insert_index[1] = int_queue_insert_index_2; 
 
         if (issue_in.valid[0] && issue_in.is_branch[0])
         begin
+            if (curr_branch_state.valid == {`BRANCH_NUM{1'b1}})
+                branch_hazard = 1'b1; 
+
             if (curr_int_queue.entry_available_bit == '0)
 			    issue_queue_full = 1'b1; 
             else if (issue_in.valid[1])
@@ -176,6 +181,8 @@ module issue (
             else if (curr_int_queue.entry_available_bit == '0)
                 issue_queue_full = 1'b1;
         end
+
+        issue_hazard = issue_queue_full | branch_hazard; 
     end
 
     always_comb
@@ -200,7 +207,6 @@ module issue (
             next_int_queue.src2 = '{default: 0};
             next_int_queue.ready_bit_src2 = '{default: 0};
             next_int_queue.immediate_data = '{default: 0}; 
-            next_int_queue.alu_ctl = '{default: ALUCTL_NOP}; 
             next_int_queue.is_branch = '{default: 0}; 
             next_int_queue.prediction = '{default: TAKEN};
             next_int_queue.recovery_target ='{default: 0}; 
@@ -234,7 +240,6 @@ module issue (
             next_int_queue.src2 = curr_int_queue.src2;
             next_int_queue.ready_bit_src2 = curr_int_queue.ready_bit_src2; 
             next_int_queue.immediate_data = curr_int_queue.immediate_data; 
-            next_int_queue.alu_ctl = curr_int_queue.alu_ctl; 
             next_int_queue.is_branch = curr_int_queue.is_branch; 
             next_int_queue.prediction = curr_int_queue.prediction; 
             next_int_queue.recovery_target = curr_int_queue.recovery_target; 
@@ -255,7 +260,7 @@ module issue (
         end
 
 
-		if (!issue_queue_full)
+		if (!issue_hazard)
         begin
             for (int i = 0; i < `ISSUE_SIZE; i++)
             begin
@@ -281,7 +286,6 @@ module issue (
                         next_int_queue.src2[int_queue_insert_index[i]] = issue_in.phys_rt[i]; 
                         next_int_queue.ready_bit_src2[int_queue_insert_index[i]] = issue_in.uses_rt[i] ? issue_in.phys_rt_valid[i] : 1'b1;
                         next_int_queue.immediate_data[int_queue_insert_index[i]] = issue_in.uses_immediate[i] ? issue_in.immediate[i] : 0; 
-                        next_int_queue.alu_ctl[int_queue_insert_index[i]] = issue_in.alu_ctl[i]; 
                         next_int_queue.is_branch[int_queue_insert_index[i]] = issue_in.is_branch[i]; 
                         next_int_queue.prediction[int_queue_insert_index[i]] = issue_in.prediction[i];
                         next_int_queue.recovery_target[int_queue_insert_index[i]] = issue_in.recovery_target[i];
@@ -328,9 +332,14 @@ module issue (
 			if (i_load_write_back.valid && i_load_write_back.uses_rw && i_load_write_back.rw_addr == next_mem_queue.sw_src[i] && next_mem_queue.entry_available_bit[i] == 0) 
 				next_mem_queue.ready_bit_sw_src[i] = 1'b1; 
 		end
-
-
-
 	end
+
+    `ifdef SIMULATION
+	always_ff @(posedge clk)
+	begin
+		if (issue_queue_full && !front_pipeline_halt) stats_event("issue_queue_full");
+		if (branch_hazard && !front_pipeline_halt) stats_event("branch_hazard");
+	end
+`endif
 
 endmodule

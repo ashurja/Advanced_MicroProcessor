@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Sat Jun 18 01:13:58 2022
+[*] Tue Jun 21 20:02:36 2022
 [*]
 [dumpfile] "/Users/jamshedashurov/Desktop/CSE148/CSE148/baseline/mips_cpu/simx.fst"
-[dumpfile_mtime] "Sat Jun 18 00:38:06 2022"
-[dumpfile_size] 73660644
+[dumpfile_mtime] "Tue Jun 21 19:45:58 2022"
+[dumpfile_size] 314467
 [savefile] "/Users/jamshedashurov/Desktop/CSE148/CSE148/baseline/mips_cpu/esift2.gtkw"
-[timestart] 47183458
-[size] 1000 600
-[pos] -1 -1
-*-5.000000 47183665 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[timestart] 532616
+[size] 2025 1284
+[pos] 1715 -1
+*-5.000000 532706 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.mips_core.
 [treeopen] TOP.mips_core.AGU.
@@ -24,9 +24,9 @@
 [treeopen] TOP.mips_core.PR_F2D.
 [treeopen] TOP.mips_core.REG_FILE.
 [sst_width] 236
-[signals_width] 403
+[signals_width] 398
 [sst_expanded] 1
-[sst_vpaned_height] 366
+[sst_vpaned_height] 891
 @200
 -Fetch
 @22
@@ -71,7 +71,6 @@ TOP.mips_core.LOAD_STORE_QUEUE.curr_rename_state.m_reg_file_valid_bit[63:0]
 TOP.mips_core.COMMIT.next_rename_state.m_reg_file_valid_bit[63:0]
 @24
 TOP.mips_core.REG_FILE.phys_rw[5:0]
-TOP.mips_core.REG_FILE.commit_output_in.reclaim_reg[5:0]
 @200
 -
 @24
@@ -94,9 +93,6 @@ TOP.mips_core.DATA_STRCUTURES_UPDATE.hazard_signal_in.dc_miss
 TOP.mips_core.COMMIT.curr_rename_state.branch_decoded_hazard
 @200
 -
-@24
-TOP.mips_core.BRANCH_MISPREDICTION.color_bit_with_ds
-@200
 -
 -
 -Issue Queue in 
@@ -151,23 +147,43 @@ TOP.mips_core.FETCH_UNIT.o_pc_next.pc[25:0]
 @200
 -
 @28
-TOP.mips_core.COMMIT.o_commit_out.queue_load
 TOP.mips_core.COMMIT.o_commit_out.queue_store
 @200
 -
-@24
-TOP.mips_core.COMMIT.simulation_verification.valid
-@23
-TOP.mips_core.COMMIT.simulation_verification.data[31:0]
-@24
-TOP.mips_core.COMMIT.simulation_verification.is_load
-TOP.mips_core.COMMIT.simulation_verification.is_store
+@420
+TOP.mips_core.COMMIT.load_counter
+TOP.mips_core.COMMIT.store_counter
+TOP.mips_core.COMMIT.num_branches
+TOP.mips_core.COMMIT.num_loads
+TOP.mips_core.COMMIT.num_stores
+TOP.mips_core.COMMIT.num_writes
+@28
+TOP.mips_core.COMMIT.o_commit_out.branch_valid[1:0]
+TOP.mips_core.COMMIT.o_commit_out.load_valid[1:0]
+TOP.mips_core.COMMIT.o_commit_out.store_valid[1:0]
+TOP.mips_core.COMMIT.o_commit_out.reclaim_valid[1:0]
+@200
+-
+-Simulation Verification
+@28
+TOP.mips_core.COMMIT.simulation_verification.valid[1:0]
 @22
-TOP.mips_core.COMMIT.simulation_verification.mem_addr[25:0]
-TOP.mips_core.COMMIT.simulation_verification.pc[25:0]
-TOP.mips_core.COMMIT.simulation_verification.rw_addr[4:0]
-@24
-TOP.mips_core.COMMIT.simulation_verification.uses_rw
+TOP.mips_core.COMMIT.simulation_verification.data[0][31:0]
+TOP.mips_core.COMMIT.simulation_verification.data[1][31:0]
+@28
+TOP.mips_core.COMMIT.simulation_verification.is_load[1:0]
+TOP.mips_core.COMMIT.simulation_verification.is_store[1:0]
+@22
+TOP.mips_core.COMMIT.simulation_verification.mem_addr[0][25:0]
+@23
+TOP.mips_core.COMMIT.simulation_verification.mem_addr[1][25:0]
+@22
+TOP.mips_core.COMMIT.simulation_verification.pc[0][25:0]
+TOP.mips_core.COMMIT.simulation_verification.pc[1][25:0]
+TOP.mips_core.COMMIT.simulation_verification.rw_addr[0][4:0]
+TOP.mips_core.COMMIT.simulation_verification.rw_addr[1][4:0]
+@28
+TOP.mips_core.COMMIT.simulation_verification.uses_rw[1:0]
 @200
 -
 @24

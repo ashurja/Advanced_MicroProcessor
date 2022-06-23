@@ -28,7 +28,6 @@ module decode_stage_glue (
 		o_decode_pass_through.phys_rs[0] = buffered_issue_state.phys_rs[0];  
 		o_decode_pass_through.phys_rt[0] = buffered_issue_state.phys_rt[0];    
 
-		o_decode_pass_through.alu_ctl[0] = buffered_issue_state.alu_ctl[0];  
 		o_decode_pass_through.uses_rs[0] = buffered_issue_state.uses_rs[0];  
 		o_decode_pass_through.uses_rt[0] = buffered_issue_state.uses_rt[0];  
 		o_decode_pass_through.uses_immediate[0] = buffered_issue_state.uses_immediate[0];  
@@ -48,7 +47,6 @@ module decode_stage_glue (
 		o_decode_pass_through.phys_rs[1] = '0;   
 		o_decode_pass_through.phys_rt[1] = '0;    
 
-		o_decode_pass_through.alu_ctl[1] = '0;   
 		o_decode_pass_through.uses_rs[1] = '0;   
 		o_decode_pass_through.uses_rt[1] = '0;   
 		o_decode_pass_through.uses_immediate[1] = '0;   
@@ -69,7 +67,6 @@ module decode_stage_glue (
 			o_decode_pass_through.phys_rs[1] = i_reg_data.phys_rs; 
 			o_decode_pass_through.phys_rt[1] = i_reg_data.phys_rt; 
 
-			o_decode_pass_through.alu_ctl[1] = i_decoded.alu_ctl; 
 			o_decode_pass_through.uses_rs[1] = i_decoded.uses_rs; 
 			o_decode_pass_through.uses_rt[1] = i_decoded.uses_rt; 
 			o_decode_pass_through.uses_immediate[1] = i_decoded.uses_immediate; 
@@ -90,7 +87,6 @@ module decode_stage_glue (
 			o_decode_pass_through.phys_rs[0] = i_reg_data.phys_rs; 
 			o_decode_pass_through.phys_rt[0] = i_reg_data.phys_rt; 
 
-			o_decode_pass_through.alu_ctl[0] = i_decoded.alu_ctl; 
 			o_decode_pass_through.uses_rs[0] = i_decoded.uses_rs; 
 			o_decode_pass_through.uses_rt[0] = i_decoded.uses_rt; 
 			o_decode_pass_through.uses_immediate[0] = i_decoded.uses_immediate; 

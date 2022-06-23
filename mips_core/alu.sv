@@ -33,8 +33,7 @@ endinterface
 
 module alu (
 	alu_input_ifc.in in,
-	alu_output_ifc.out out,
-	output logic done
+	alu_output_ifc.out out
 );
 
 	always_comb
@@ -42,14 +41,13 @@ module alu (
 		out.valid = 1'b0;
 		out.result = '0;
 		out.branch_outcome = TAKEN;
-		done = 1'b0;
 
 		if (in.valid)
 		begin
 			out.valid = 1'b1;
 
 			case (in.alu_ctl)
-				ALUCTL_NOP:  out.result = '0;
+				ALUCTL_NOP, ALUCTL_MTC0_PASS, ALUCTL_MTC0_DONE, ALUCTL_MTC0_FAIL:  out.result = '0;
 				ALUCTL_ADD:  out.result = in.op1 + in.op2;
 				ALUCTL_ADDU: out.result = in.op1 + in.op2;
 				ALUCTL_SUB:  out.result = in.op1 - in.op2;
@@ -66,28 +64,6 @@ module alu (
 				ALUCTL_SRLV: out.result = in.op2 >> in.op1[4:0];
 				ALUCTL_SRAV: out.result = in.op2 >>> in.op1[4:0];
 				ALUCTL_NOR:  out.result = ~(in.op1 | in.op2);
-
-				ALUCTL_MTC0_PASS:   // MTC0 -- redefined for our purposes.
-				begin
-				`ifdef SIMULATION
-					$display("%m (%t) PASS test %x", $time, in.op2);
-				`endif
-				end
-
-				ALUCTL_MTC0_FAIL:
-				begin
-				`ifdef SIMULATION
-					$display("%m (%t) FAIL test %x", $time, in.op2);
-				`endif
-				end
-
-				ALUCTL_MTC0_DONE:
-				begin
-					done = 1'b1;
-				`ifdef SIMULATION
-					$display("%m (%t) DONE test %x", $time, in.op2);
-				`endif
-				end
 
 				ALUCTL_BA:   out.branch_outcome = TAKEN;
 				ALUCTL_BEQ:  out.branch_outcome = in.op1 == in.op2     ? TAKEN : NOT_TAKEN;

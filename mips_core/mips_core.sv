@@ -19,7 +19,7 @@ module mips_core (
 	// General signals
 	input clk,    // Clock
 	input rst_n,  // Synchronous reset active low
-	output done,  // Execution is done
+	output logic done,  // Execution is done
 
 	// AXI interfaces
 	input AWREADY,
@@ -132,10 +132,11 @@ module mips_core (
 	load_queue_ifc misprediction_load_queue(); 
 	store_queue_ifc misprediction_store_queue(); 
 	branch_state_ifc misprediction_branch_state(); 
+	misprediction_output_ifc misprediction_out(); 
 	// xxxx Hazard control
 
 	logic mem_done;
-	logic issue_queue_full; 
+	logic issue_hazard; 
 	logic decode_hazard; 
 	logic load_store_queue_full; 
 	logic misprediction_recovery; 
@@ -226,7 +227,7 @@ module mips_core (
 		.clk,
 		.rst_n,
 		.load_store_queue_full,
-		.issue_queue_full, 
+		.issue_hazard, 
 
 		.hazard_signal_in(hazard_signals), 
 
@@ -238,7 +239,7 @@ module mips_core (
 		.curr_rename_state,
 		.curr_active_state,
 		.curr_branch_state,
-		.commit_output_in(commit_out), 
+		.i_commit_out(commit_out), 
 		.curr_commit_state, 
 
 		.next_active_state, 
@@ -271,7 +272,8 @@ module mips_core (
 
 
 	issue ISSUE (
-		.rst_n,
+		.clk, .rst_n,
+		.front_pipeline_halt, 
 
 		.issue_in(issue_input),
 		.curr_mem_queue,
@@ -287,7 +289,7 @@ module mips_core (
 		.next_int_queue, 
 		.next_branch_state, 
 
-		.issue_queue_full
+		.issue_hazard
 	); 
 
 	// ========================================================================
@@ -319,8 +321,7 @@ module mips_core (
 	// ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 	alu ALU(
 		.in(alu_input),
-		.out(alu_output),
-		.done
+		.out(alu_output)
 	);
 
 	agu AGU (
@@ -359,7 +360,7 @@ module mips_core (
 	pr_e2m PR_E2M (
 		.clk, .rst_n, 
 
-		.invalidate_d_cache_output, 
+		.misprediction_out, 
 		.hazard_signal_in(hazard_signals), 
 		.i_d_cache_input,
 		.i_d_cache_controls, 
@@ -395,7 +396,9 @@ module mips_core (
 	); 
 
 	commit COMMIT (
-		.rst_n, 
+		.clk, .rst_n, 
+		.hazard_signal_in(hazard_signals), 
+		.misprediction_out, 
 		.i_int_commit(int_commit), 
 		.i_mem_commit(mem_commit), 
 		.curr_commit_state, 
@@ -405,6 +408,7 @@ module mips_core (
 		.curr_load_queue, 
 		.curr_store_queue, 
 		.curr_branch_state, 
+		.alu_input,
 
 		.o_commit_out(commit_out), 
 		.next_commit_state,
@@ -416,7 +420,6 @@ module mips_core (
 
 		.hazard_signal_in(hazard_signals),
 		.o_d_cache_controls,
-		.o_d_cache_input,
 
 		.curr_branch_state,
 		.curr_rename_state, 
@@ -434,8 +437,7 @@ module mips_core (
 		.misprediction_load_queue, 
 		.misprediction_store_queue, 
 		.misprediction_branch_state, 
-
-		.invalidate_d_cache_output
+		.misprediction_out
 	); 
 
 	data_struct_update DATA_STRCUTURES_UPDATE (
@@ -493,7 +495,7 @@ module mips_core (
 
 		.mem_done, 
 		.decode_hazard, 
-		.issue_queue_full, 
+		.issue_hazard, 
 		.front_pipeline_halt, 
 
 		.next_rename_state,
@@ -563,28 +565,41 @@ module mips_core (
 `ifdef SIMULATION
 	always_ff @(posedge clk)
 	begin
-		/*
-			* If an instruction goes into d2e pipeline register and is not a
-			* nop, we count it as an instruction we executed.
-			*/
-		// if (!f2d_hc.stall
-		// 	&& !d2i_hc.flush
-		// 	&& dec_decoder_output.valid
-		// 	&& f2d_inst.data)
-		// begin
-		// 	pc_event(f2d_pc.pc);
-		// end
+		done <= 1'b0; 
+		for (int i = 0; i <= commit_out.last_valid_commit_idx; i++)
+		begin
+			if (commit_out.commit_valid)
+			begin
+				if (curr_active_state.alu_ctl[simulation_verification.active_list_id[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]]] == ALUCTL_MTC0_DONE)
+				begin
+					done <= 1'b1;
+					`ifdef SIMULATION
+						$display("%m (%t) DONE test %x", $time, simulation_verification.op2[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]]);
+					`endif
+				end
+				else if (curr_active_state.alu_ctl[simulation_verification.active_list_id[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]]] == ALUCTL_MTC0_PASS)
+				begin
+					`ifdef SIMULATION
+						$display("%m (%t) PASS test %x", $time, simulation_verification.op2[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]]);
+					`endif
+				end
+				else if (curr_active_state.alu_ctl[simulation_verification.active_list_id[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]]] == ALUCTL_MTC0_FAIL)
+				begin
+					`ifdef SIMULATION
+						$display("%m (%t) FAIL test %x", $time, simulation_verification.op2[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]]);
+					`endif
+				end
+				pc_event(simulation_verification.pc[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]]); 
 
-		if (simulation_verification.valid)
-			pc_event(simulation_verification.pc); 
+				if (simulation_verification.uses_rw[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]])
+					wb_event(simulation_verification.rw_addr[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]], simulation_verification.data[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]]);
 
-		if (simulation_verification.valid && simulation_verification.uses_rw)
-			wb_event(simulation_verification.rw_addr, simulation_verification.data);
-
-		if (simulation_verification.is_load)
-			ls_event(READ, simulation_verification.mem_addr, simulation_verification.data);
-		if (simulation_verification.is_store)
-			ls_event(WRITE, simulation_verification.mem_addr, simulation_verification.data);
+				if (simulation_verification.is_load[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]])
+					ls_event(READ, simulation_verification.mem_addr[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]], simulation_verification.data[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]]);
+				if (simulation_verification.is_store[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]])
+					ls_event(WRITE, simulation_verification.mem_addr[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]], simulation_verification.data[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]]);
+			end
+		end
 	end
 `endif
 

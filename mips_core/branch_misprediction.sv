@@ -11,6 +11,14 @@ interface branch_state_ifc ();
 	modport out (output valid, free_head_pointer, rename_buffer, write_pointer, branch_id, ds_valid);
 endinterface
 
+interface misprediction_output_ifc (); 
+    logic invalidate_d_cache_output; 
+    logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] branch_id_with_ds; 
+    logic color_bit_with_ds; 
+
+    modport in (input invalidate_d_cache_output, branch_id_with_ds, color_bit_with_ds); 
+    modport out (output invalidate_d_cache_output, branch_id_with_ds, color_bit_with_ds); 
+endinterface
 
 module branch_misprediction  (
     input rst_n,
@@ -18,7 +26,6 @@ module branch_misprediction  (
     hazard_signals_ifc.in hazard_signal_in,
 
     d_cache_controls_ifc.in o_d_cache_controls,
-    d_cache_input_ifc.in o_d_cache_input,
 
     branch_state_ifc.in curr_branch_state,
     rename_ifc.in curr_rename_state, 
@@ -36,12 +43,9 @@ module branch_misprediction  (
     load_queue_ifc.out misprediction_load_queue, 
     store_queue_ifc.out misprediction_store_queue,
     branch_state_ifc.out misprediction_branch_state, 
-    
-    output invalidate_d_cache_output
+
+    misprediction_output_ifc.out misprediction_out
 );
-    
-    logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] branch_id_with_ds; 
-    logic color_bit_with_ds; 
 
     logic [`BRANCH_NUM - 1 : 0] cmpt_misprediction_idx; 
     logic [`BRANCH_NUM_INDEX - 1 : 0] misprediction_idx; 
@@ -96,18 +100,16 @@ module branch_misprediction  (
 
     always_comb
     begin
-        branch_id_with_ds = '0; 
-        color_bit_with_ds = 1'b0; 
 
         if (curr_branch_state.ds_valid[misprediction_idx])
         begin
-            branch_id_with_ds = hazard_signal_in.branch_id + 1'b1; 
-            color_bit_with_ds = (branch_id_with_ds == 0) ? !hazard_signal_in.color_bit : hazard_signal_in.color_bit; 
+           misprediction_out.branch_id_with_ds = hazard_signal_in.branch_id + 1'b1; 
+           misprediction_out.color_bit_with_ds = (misprediction_out.branch_id_with_ds == 0) ? !hazard_signal_in.color_bit : hazard_signal_in.color_bit; 
         end
         else 
         begin
-            branch_id_with_ds = hazard_signal_in.branch_id; 
-            color_bit_with_ds = hazard_signal_in.color_bit; 
+           misprediction_out.branch_id_with_ds = hazard_signal_in.branch_id; 
+           misprediction_out.color_bit_with_ds = hazard_signal_in.color_bit; 
         end
 
     end
@@ -135,8 +137,8 @@ module branch_misprediction  (
 
         if (hazard_signal_in.branch_miss)
         begin
-            misprediction_active_state.youngest_inst_pointer = branch_id_with_ds + 1'b1; 
-            misprediction_active_state.global_color_bit = (branch_id_with_ds == `ACTIVE_LIST_SIZE - 1) ? !color_bit_with_ds : color_bit_with_ds; 
+            misprediction_active_state.youngest_inst_pointer = misprediction_out.branch_id_with_ds + 1'b1; 
+            misprediction_active_state.global_color_bit = (misprediction_out.branch_id_with_ds == `ACTIVE_LIST_SIZE - 1'b1) ? !misprediction_out.color_bit_with_ds : misprediction_out.color_bit_with_ds; 
         end
     end
 
@@ -156,14 +158,14 @@ module branch_misprediction  (
             
             for (int i = 0; i < `INT_QUEUE_SIZE; i++)
             begin
-                if (color_bit_with_ds == curr_active_state.color_bit[curr_int_queue.active_list_id[i]])
+                if (misprediction_out.color_bit_with_ds == curr_active_state.color_bit[curr_int_queue.active_list_id[i]])
                 begin
-                    if (branch_id_with_ds < curr_int_queue.active_list_id[i])
+                    if (misprediction_out.branch_id_with_ds < curr_int_queue.active_list_id[i])
                         misprediction_int_queue.entry_available_bit[i] = 1'b1; 
                 end
                 else 
                 begin
-                    if (branch_id_with_ds > curr_int_queue.active_list_id[i])
+                    if (misprediction_out.branch_id_with_ds > curr_int_queue.active_list_id[i])
                         misprediction_int_queue.entry_available_bit[i] = 1'b1; 
                 end
             end
@@ -171,14 +173,14 @@ module branch_misprediction  (
 
             for (int i = 0; i < `MEM_QUEUE_SIZE; i++)
             begin
-                if (color_bit_with_ds == curr_active_state.color_bit[curr_mem_queue.active_list_id[i]])
+                if (misprediction_out.color_bit_with_ds == curr_active_state.color_bit[curr_mem_queue.active_list_id[i]])
                 begin
-                    if (branch_id_with_ds < curr_mem_queue.active_list_id[i])
+                    if (misprediction_out.branch_id_with_ds < curr_mem_queue.active_list_id[i])
                         misprediction_mem_queue.entry_available_bit[i] = 1'b1; 
                 end
                 else 
                 begin
-                    if (branch_id_with_ds > curr_mem_queue.active_list_id[i])
+                    if (misprediction_out.branch_id_with_ds > curr_mem_queue.active_list_id[i])
                         misprediction_mem_queue.entry_available_bit[i] = 1'b1; 
                 end
             end
@@ -235,7 +237,7 @@ module branch_misprediction  (
 
     always_comb
     begin : handle_d_cache_input_queues
-        invalidate_d_cache_output = 1'b0; 
+        misprediction_out.invalidate_d_cache_output = 1'b0; 
 
         misprediction_load_queue.entry_available_bit = curr_load_queue.entry_available_bit; 
         misprediction_load_queue.active_list_id = curr_load_queue.active_list_id; 
@@ -260,9 +262,9 @@ module branch_misprediction  (
         begin
             for (int i = 0; i < `LOAD_STORE_SIZE; i++)
             begin
-                if (color_bit_with_ds == curr_active_state.color_bit[curr_load_queue.active_list_id[i]])
+                if (misprediction_out.color_bit_with_ds == curr_active_state.color_bit[curr_load_queue.active_list_id[i]])
                 begin
-                    if (branch_id_with_ds < curr_load_queue.active_list_id[i])
+                    if (misprediction_out.branch_id_with_ds < curr_load_queue.active_list_id[i])
                     begin
                         misprediction_load_queue.entry_available_bit[i] = 1'b1;    
                         misprediction_load_queue.valid[i] = 1'b0;  
@@ -271,7 +273,7 @@ module branch_misprediction  (
                 end
                 else 
                 begin
-                    if (branch_id_with_ds > curr_load_queue.active_list_id[i])
+                    if (misprediction_out.branch_id_with_ds > curr_load_queue.active_list_id[i])
                     begin
                         misprediction_load_queue.entry_available_bit[i] = 1'b1;    
                         misprediction_load_queue.valid[i] = 1'b0;  
@@ -283,9 +285,9 @@ module branch_misprediction  (
 
             for (int i = 0; i < `LOAD_STORE_SIZE; i++)
             begin
-                if (color_bit_with_ds == curr_active_state.color_bit[curr_store_queue.active_list_id[i]])
+                if (misprediction_out.color_bit_with_ds == curr_active_state.color_bit[curr_store_queue.active_list_id[i]])
                 begin
-                    if (branch_id_with_ds < curr_store_queue.active_list_id[i])
+                    if (misprediction_out.branch_id_with_ds < curr_store_queue.active_list_id[i])
                     begin
                         misprediction_store_queue.entry_available_bit[i] = 1'b1;    
                         misprediction_store_queue.valid[i] = 1'b0;  
@@ -293,7 +295,7 @@ module branch_misprediction  (
                 end
                 else 
                 begin
-                    if (branch_id_with_ds > curr_store_queue.active_list_id[i])
+                    if (misprediction_out.branch_id_with_ds > curr_store_queue.active_list_id[i])
                     begin
                         misprediction_store_queue.entry_available_bit[i] = 1'b1;    
                         misprediction_store_queue.valid[i] = 1'b0;  
@@ -326,9 +328,9 @@ module branch_misprediction  (
 
             if (hazard_signal_in.dc_miss) 
             begin
-                if(o_d_cache_input.mem_action == READ)
+                if(o_d_cache_controls.mem_action == READ)
                 begin
-                    invalidate_d_cache_output = misprediction_load_queue.entry_available_bit[o_d_cache_controls.dispatch_index]; 
+                    misprediction_out.invalidate_d_cache_output = misprediction_load_queue.entry_available_bit[o_d_cache_controls.dispatch_index]; 
                 end
             end
         end

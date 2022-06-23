@@ -41,10 +41,27 @@ module data_struct_update (
 	store_queue_ifc.out curr_store_queue
 );
 
+	logic [`ACTIVE_LIST_SIZE - 1 : 0] commit_next_ready_to_commit; 
+	always_comb
+	begin
+		commit_next_ready_to_commit = next_commit_state.ready_to_commit; 
+
+		for (int i = 0; i < `COMMIT_WINDOW_SIZE; i++)
+		begin
+			if (i_commit_out.commit_valid)
+			begin
+				if (i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0] <= i_commit_out.last_valid_commit_idx)
+				begin
+					commit_next_ready_to_commit[curr_commit_state.oldest_inst_pointer + i[`ACTIVE_LIST_SIZE_INDEX - 1 : 0]] = 1'b0; 
+				end
+			end
+		end
+	end
+
     always_ff @(posedge clk) 
     begin : UPDATE_COMMIT_STATE
 
-		curr_commit_state.ready_to_commit <= next_commit_state.ready_to_commit; 
+		curr_commit_state.ready_to_commit <= commit_next_ready_to_commit; 
 		curr_commit_state.entry_available_bit <= next_commit_state.entry_available_bit; 
 		curr_commit_state.branch_read_pointer <= next_commit_state.branch_read_pointer; 
 		curr_commit_state.oldest_inst_pointer <= next_commit_state.oldest_inst_pointer; 
@@ -67,12 +84,40 @@ module data_struct_update (
 	end
 
 
+	logic [`BRANCH_NUM - 1 : 0] branch_next_valid; 
+	int branch; 
+	always_comb
+	begin
+		branch = 0; 
+
+		if (hazard_signal_in.branch_miss)
+		begin
+			branch_next_valid = misprediction_branch_state.valid; 
+		end
+		else 
+		begin
+			branch_next_valid = next_branch_state.valid; 
+		end
+
+		for (int i = 0; i < `COMMIT_WINDOW_SIZE; i++)
+        begin
+            if (i_commit_out.commit_valid)
+            begin
+                if (i_commit_out.branch_valid[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] && i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0] <= i_commit_out.last_valid_commit_idx)
+                    begin
+						branch_next_valid[curr_commit_state.branch_read_pointer + branch[`BRANCH_NUM_INDEX - 1 : 0]] = 1'b0;
+						branch++; 
+					end
+            end
+        end
+	end
+
 	always_ff @(posedge clk)
 	begin : UPDATE_BRANCH_STATE
 
 		if (hazard_signal_in.branch_miss)
 		begin
-			curr_branch_state.valid <= misprediction_branch_state.valid; 
+			// curr_branch_state.valid <= misprediction_branch_state.valid; 
 			curr_branch_state.write_pointer <= misprediction_branch_state.write_pointer; 
 
 			curr_branch_state.ds_valid <= next_branch_state.ds_valid; 
@@ -84,17 +129,14 @@ module data_struct_update (
 		else 
 		begin
 			curr_branch_state.write_pointer <= next_branch_state.write_pointer; 
-			curr_branch_state.valid <= next_branch_state.valid; 
+			// curr_branch_state.valid <= next_branch_state.valid; 
 			curr_branch_state.free_head_pointer <= next_branch_state.free_head_pointer; 
 			curr_branch_state.rename_buffer <= next_branch_state.rename_buffer; 
 			curr_branch_state.branch_id <= next_branch_state.branch_id; 
 			curr_branch_state.ds_valid <= next_branch_state.ds_valid; 
 		end
 
-		if (i_commit_out.branch_done)
-		begin
-			curr_branch_state.valid[curr_commit_state.branch_read_pointer] <= 1'b0; 
-		end
+		curr_branch_state.valid = branch_next_valid; 
 	end
 
 
@@ -114,6 +156,7 @@ module data_struct_update (
 		end
 		
 		curr_active_state.pc <= next_active_state.pc; 
+		curr_active_state.alu_ctl <= next_active_state.alu_ctl; 
 		curr_active_state.color_bit <= next_active_state.color_bit; 
 		curr_active_state.reclaim_list <= next_active_state.reclaim_list;
 		curr_active_state.is_load <= next_active_state.is_load; 
@@ -157,7 +200,6 @@ module data_struct_update (
 		buffered_issue_state.phys_rs_valid <= i_decode_pass_through.phys_rs_valid;
 		buffered_issue_state.phys_rt <= i_decode_pass_through.phys_rt;
 		buffered_issue_state.phys_rt_valid <= i_decode_pass_through.phys_rt_valid; 
-		buffered_issue_state.alu_ctl <= i_decode_pass_through.alu_ctl; 
 		buffered_issue_state.uses_rs <= i_decode_pass_through.uses_rs; 
 		buffered_issue_state.uses_rt <= i_decode_pass_through.uses_rt;
 		buffered_issue_state.uses_immediate <= i_decode_pass_through.uses_immediate;
@@ -188,7 +230,6 @@ module data_struct_update (
 		curr_int_queue.src2 <= next_int_queue.src2; 
 		curr_int_queue.ready_bit_src2 <= next_int_queue.ready_bit_src2; 
 		curr_int_queue.immediate_data <= next_int_queue.immediate_data; 
-		curr_int_queue.alu_ctl <= next_int_queue.alu_ctl;  
 		curr_int_queue.is_branch <= next_int_queue.is_branch;
 		curr_int_queue.prediction <= next_int_queue.prediction; 
 		curr_int_queue.recovery_target <= next_int_queue.recovery_target; 
@@ -214,12 +255,68 @@ module data_struct_update (
     end
 
 
+	logic [`LOAD_STORE_SIZE - 1 : 0] load_next_entry_available; 
+	logic [`LOAD_STORE_SIZE - 1 : 0] store_next_entry_available;
+
+	logic [`LOAD_STORE_SIZE - 1 : 0] store_next_valid; 
+	logic [`LOAD_STORE_SIZE - 1 : 0] load_next_valid; 
+
+	int load, store; 
+	always_comb
+	begin
+		load = 0; 
+		store = 0; 
+
+		if (hazard_signal_in.branch_miss)
+		begin
+			load_next_entry_available = misprediction_load_queue.entry_available_bit; 
+			store_next_entry_available = misprediction_store_queue.entry_available_bit; 
+		end
+		else 
+		begin
+			load_next_entry_available = next_load_queue.entry_available_bit; 
+			store_next_entry_available = next_store_queue.entry_available_bit; 
+		end
+
+		store_next_valid = next_store_queue.valid; 
+		load_next_valid = next_load_queue.valid; 
+
+		if (!hazard_signal_in.dc_miss && i_d_cache_controls.valid)
+		begin
+			if (i_d_cache_controls.mem_action == READ)
+			begin
+				load_next_valid[curr_load_queue.read_pointer] = 1'b0; 
+			end
+		end
+
+		for (int i = 0; i < `COMMIT_WINDOW_SIZE; i++)
+        begin
+            if (i_commit_out.commit_valid)
+            begin
+                if (i_commit_out.load_valid[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] && i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0] <= i_commit_out.last_valid_commit_idx)
+					begin
+						load_next_entry_available[curr_commit_state.load_commit_pointer + load[`LOAD_STORE_SIZE_INDEX - 1 : 0]] = 1'b1; 
+						load++; 
+					end
+					
+                if (i_commit_out.store_valid[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] && i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0] <= i_commit_out.last_valid_commit_idx)
+                    begin
+						store_next_entry_available[curr_commit_state.store_commit_pointer + store[`LOAD_STORE_SIZE_INDEX - 1 : 0]] = 1'b1; 
+						store_next_valid[curr_commit_state.store_commit_pointer + store[`LOAD_STORE_SIZE_INDEX - 1 : 0]] = 1'b0;
+						store++; 
+					end
+            end
+        end
+
+	end
+
+
 	always_ff @(posedge clk)
 	begin : UPDATE_LOAD_STORE_STAGE
 		if (hazard_signal_in.branch_miss)
 		begin
 			curr_load_queue.active_list_id <= misprediction_load_queue.active_list_id; 
-			curr_load_queue.entry_available_bit <= misprediction_load_queue.entry_available_bit; 
+			// curr_load_queue.entry_available_bit <= misprediction_load_queue.entry_available_bit; 
 			curr_load_queue.entry_write_pointer <= misprediction_load_queue.entry_write_pointer; 
 
 			curr_store_queue.active_list_id <= misprediction_store_queue.active_list_id; 
@@ -229,7 +326,7 @@ module data_struct_update (
 		else 
 		begin
 			curr_load_queue.active_list_id <= next_load_queue.active_list_id; 
-			curr_load_queue.entry_available_bit <= next_load_queue.entry_available_bit; 
+			// curr_load_queue.entry_available_bit <= next_load_queue.entry_available_bit; 
 			curr_load_queue.entry_write_pointer <= next_load_queue.entry_write_pointer; 
 
 
@@ -238,33 +335,17 @@ module data_struct_update (
 			curr_store_queue.entry_write_pointer <= next_store_queue.entry_write_pointer; 
 		end
 
+		curr_load_queue.entry_available_bit <= load_next_entry_available; 
 		curr_load_queue.mem_addr <= next_load_queue.mem_addr; 
 		curr_load_queue.read_pointer <= next_load_queue.read_pointer; 
-		curr_load_queue.valid <= next_load_queue.valid;
+		curr_load_queue.valid <= load_next_valid;
 
+		curr_store_queue.entry_available_bit <= store_next_entry_available; 
 		curr_store_queue.sw_data <= next_store_queue.sw_data; 
 		curr_store_queue.mem_addr <= next_store_queue.mem_addr; 
 		curr_store_queue.read_pointer <= next_store_queue.read_pointer; 
-		curr_store_queue.valid <= next_store_queue.valid; 
+		curr_store_queue.valid <= store_next_valid; 
 
-		if (!hazard_signal_in.dc_miss && i_d_cache_controls.valid)
-		begin
-			if (i_d_cache_controls.mem_action == READ)
-			begin
-				curr_load_queue.valid[curr_load_queue.read_pointer] <= 1'b0; 
-			end
-		end
-
-		if (i_commit_out.load_done)
-		begin
-			curr_load_queue.entry_available_bit[curr_commit_state.load_commit_pointer] <= 1'b1; 
-		end
-
-		if (i_commit_out.store_done)
-		begin 
-			curr_store_queue.entry_available_bit[curr_commit_state.store_commit_pointer] <= 1'b1; 
-			curr_store_queue.valid[curr_commit_state.store_commit_pointer] <= 1'b0;
-		end
 	end
 
 

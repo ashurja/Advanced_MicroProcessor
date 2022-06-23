@@ -77,7 +77,7 @@ module scheduler (
 	always_comb
 	begin : handle_int
 		o_alu_input.valid = alu_dispatch_match;
-		o_alu_input.alu_ctl = curr_int_queue.alu_ctl[alu_dispatch_index];
+		o_alu_input.alu_ctl = curr_active_state.alu_ctl[curr_int_queue.active_list_id[alu_dispatch_index]];
 		o_alu_input.op1 = curr_int_queue.uses_rs[alu_dispatch_index] ? curr_rename_state.merged_reg_file[curr_int_queue.src1[alu_dispatch_index]] : '0; 
 
 		if (curr_int_queue.uses_immediate[alu_dispatch_index]) o_alu_input.op2 = curr_int_queue.immediate_data[alu_dispatch_index]; 

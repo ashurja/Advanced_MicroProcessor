@@ -41,7 +41,7 @@ module reg_file (
 	input rst_n,
 
 	input logic load_store_queue_full, 
-	input logic issue_queue_full,
+	input logic issue_hazard,
 
 	// Input from decoder
 	pc_ifc.in pc_in, 
@@ -55,7 +55,7 @@ module reg_file (
 	active_state_ifc.in curr_active_state, 
 	commit_state_ifc.in curr_commit_state, 
 	branch_state_ifc.in curr_branch_state,
-	commit_output_ifc.in commit_output_in, 
+	commit_output_ifc.in i_commit_out, 
 
 	active_state_ifc.out next_active_state,
 	rename_ifc.out next_rename_state,
@@ -70,28 +70,29 @@ module reg_file (
 	logic reg_jump_hazard; 
 	logic active_list_hazard; 
 	logic free_list_hazard; 
-	logic branch_hazard; 
+
 	logic load_store_hazard; 
 	logic ds_miss; 
 
+	int reclaim; 
 	always_comb
 	begin
 		active_list_hazard = curr_commit_state.entry_available_bit == '0;  
 		free_list_hazard = (curr_rename_state.free_head_pointer == curr_commit_state.free_tail_pointer && i_decoded.uses_rw); 
 		reg_jump_hazard = i_decoded.is_jump_reg & !curr_rename_state.m_reg_file_valid_bit[curr_rename_state.rename_buffer[i_decoded.rs_addr]]; 
-		branch_hazard = (curr_branch_state.valid == {`BRANCH_NUM{1'b1}}) & i_decoded.is_branch_jump & !i_decoded.is_jump; 
 		load_store_hazard = load_store_queue_full & i_decoded.is_mem_access; 
 		ds_miss = hazard_signal_in.ic_miss & i_decoded.is_branch_jump; 
 
-		decode_hazard = active_list_hazard | free_list_hazard | reg_jump_hazard | branch_hazard | load_store_hazard | issue_queue_full | ds_miss; 
+		decode_hazard = active_list_hazard | free_list_hazard | reg_jump_hazard | issue_hazard | load_store_hazard | ds_miss; 
 
 		phys_rw = '0; 
+		reclaim = 0; 
 
 		if (!rst_n)
 		begin
 			for (int i = 0; i < `REG_NUM; i++)
 			begin
-				next_rename_state.rename_buffer[i - 1] = i[$clog2(`REG_NUM) - 1 : 0]; 
+				next_rename_state.rename_buffer[i] = i[`PHYS_REG_NUM_INDEX - 1 : 0]; 
 			end
 
 			for (int i = 0; i < `PHYS_REG_NUM; i++)
@@ -106,6 +107,7 @@ module reg_file (
 			next_rename_state.branch_decoded_hazard = '0; 
 
 			next_active_state.reclaim_list = '{default: 0}; 
+			next_active_state.alu_ctl = '{default: 0}; 
 			next_active_state.uses_rw = '{default: 0};
 			next_active_state.rw_addr = '{default: 0};
 			next_active_state.is_store = '{default: 0}; 
@@ -127,6 +129,7 @@ module reg_file (
 			next_rename_state.reverse_rename_map = curr_rename_state.reverse_rename_map; 
 
 			next_active_state.reclaim_list = curr_active_state.reclaim_list; 
+			next_active_state.alu_ctl = curr_active_state.alu_ctl; 
 			next_active_state.is_store = curr_active_state.is_store; 
 			next_active_state.is_load = curr_active_state.is_load;
 			next_active_state.uses_rw = curr_active_state.uses_rw; 
@@ -162,6 +165,7 @@ module reg_file (
 
 
 				next_active_state.color_bit[curr_active_state.youngest_inst_pointer] = curr_active_state.global_color_bit; 
+				next_active_state.alu_ctl[curr_active_state.youngest_inst_pointer] = i_decoded.alu_ctl; 
 				next_active_state.pc[curr_active_state.youngest_inst_pointer] = pc_in.pc; 
 				next_active_state.is_load[curr_active_state.youngest_inst_pointer] = i_decoded.mem_action == READ & i_decoded.is_mem_access; 
 				next_active_state.is_store[curr_active_state.youngest_inst_pointer] = i_decoded.mem_action == WRITE & i_decoded.is_mem_access; 
@@ -185,9 +189,17 @@ module reg_file (
 			next_rename_state.m_reg_file_valid_bit[i_load_write_back.rw_addr] = 1'b1;
 		end
 
-		if (commit_output_in.reclaim_valid)
+		for (int i = 0; i < `COMMIT_WINDOW_SIZE; i++)
 		begin
-			next_rename_state.free_list[curr_commit_state.free_tail_pointer] = commit_output_in.reclaim_reg; 
+			if (i_commit_out.commit_valid)
+			begin
+				if (i_commit_out.reclaim_valid[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] && i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0] <= i_commit_out.last_valid_commit_idx)
+				begin
+					next_rename_state.free_list[curr_commit_state.free_tail_pointer + reclaim[`PHYS_REG_NUM_INDEX - 1 : 0]] = i_commit_out.reclaim_reg[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]]; 
+					reclaim++; 
+				end
+			end
+
 		end
 
 	end
@@ -225,7 +237,6 @@ module reg_file (
 		if (active_list_hazard && !front_pipeline_halt) stats_event("active_list_full");
 		if (load_store_hazard && !front_pipeline_halt) stats_event("load_store_queue_full");
 		if (reg_jump_hazard && !front_pipeline_halt) stats_event("reg_jump_hazard");
-		if (branch_hazard && !front_pipeline_halt) stats_event("dec_branch");
 		if (free_list_hazard && !front_pipeline_halt) stats_event("free_list_full");
 	end
 `endif
