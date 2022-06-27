@@ -36,8 +36,8 @@ interface d_cache_input_ifc ();
 endinterface
 
 module d_cache #(
-	parameter INDEX_WIDTH = 10,
-	parameter BLOCK_OFFSET_WIDTH = 3
+	parameter INDEX_WIDTH = 4,
+	parameter BLOCK_OFFSET_WIDTH = 2
 	)(
 	// General signals
 	input clk,    // Clock

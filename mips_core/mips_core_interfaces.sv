@@ -9,43 +9,6 @@
  */
 `include "mips_core.svh"
 
-
-interface active_state_ifc (); 
-
-	logic [`PHYS_REG_NUM_INDEX - 1 : 0] reclaim_list [`ACTIVE_LIST_SIZE];
-	logic [`ADDR_WIDTH - 1 : 0] pc [`ACTIVE_LIST_SIZE]; 
-	logic global_color_bit; 
-	logic color_bit [`ACTIVE_LIST_SIZE]; 
-	logic uses_rw [`ACTIVE_LIST_SIZE]; 
-	logic is_store [`ACTIVE_LIST_SIZE];
-	logic is_load [`ACTIVE_LIST_SIZE];  
-	mips_core_pkg::AluCtl alu_ctl[`ACTIVE_LIST_SIZE];
-	logic [`PHYS_REG_NUM_INDEX - 1 : 0] rw_addr[`ACTIVE_LIST_SIZE]; 
-	logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] youngest_inst_pointer; 
-
-	modport in (input reclaim_list, uses_rw, rw_addr, is_store, alu_ctl,
-		youngest_inst_pointer, is_load, pc, color_bit, global_color_bit); 
-	modport out (output reclaim_list, uses_rw, rw_addr, is_store, alu_ctl,
-		youngest_inst_pointer, is_load, pc, color_bit, global_color_bit); 
-endinterface
-
-interface rename_ifc (); 
-    logic branch_decoded_hazard; 
-	logic [`REG_NUM_INDEX - 1 : 0] reverse_rename_map [`PHYS_REG_NUM]; 
-	logic [`PHYS_REG_NUM_INDEX - 1 : 0] rename_buffer [`REG_NUM]; 
-	logic [`PHYS_REG_NUM_INDEX - 1 : 0] free_head_pointer; 
-	logic [`PHYS_REG_NUM_INDEX - 1 : 0] free_list [`PHYS_REG_NUM]; 
-	logic [`DATA_WIDTH - 1 : 0] merged_reg_file [`PHYS_REG_NUM]; 
-	logic [`PHYS_REG_NUM - 1 : 0] m_reg_file_valid_bit; 
-
-
-	modport in (input merged_reg_file, m_reg_file_valid_bit, free_list,
-		rename_buffer, free_head_pointer, reverse_rename_map, branch_decoded_hazard); 
-	modport out (output merged_reg_file, m_reg_file_valid_bit, free_list,
-		rename_buffer, free_head_pointer, reverse_rename_map, branch_decoded_hazard); 
-
-endinterface
-
 interface load_pc_ifc ();
 	logic we;	// Write Enable
 	logic [`ADDR_WIDTH - 1 : 0] new_pc;
@@ -69,17 +32,6 @@ interface cache_output_ifc ();
 	modport out (output valid, data);
 endinterface
 
-interface d_cache_controls_ifc (); 
-	logic valid; 
-	mips_core_pkg::MemAccessType mem_action;
-	logic bypass_possible; 
-	logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] bypass_index; 
-	logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] dispatch_index; 
-	logic NOP; 
-	modport in (input valid, bypass_possible, bypass_index, NOP, dispatch_index, mem_action); 
-	modport out (output valid, bypass_possible, bypass_index, NOP, dispatch_index, mem_action); 
-endinterface
-
 interface branch_decoded_ifc ();
 	logic valid;	// High means the instruction is a branch or a jump
 	logic is_jump;	// High means the instruction is a jump
@@ -94,52 +46,53 @@ interface branch_decoded_ifc ();
 		input valid, is_jump, target);
 endinterface
 
+interface alu_pass_through_ifc ();
+	logic is_branch;
+	mips_core_pkg::BranchOutcome prediction;
+	logic [`ADDR_WIDTH - 1 : 0] recovery_target;
+
+	logic is_mem_access;
+	mips_core_pkg::MemAccessType mem_action;
+	logic [`DATA_WIDTH - 1 : 0] sw_data;
+
+	logic uses_rw;
+	mips_core_pkg::MipsReg rw_addr;
+
+	modport in  (input is_branch, prediction, recovery_target, is_mem_access,
+		mem_action, sw_data, uses_rw, rw_addr);
+	modport out (output is_branch, prediction, recovery_target, is_mem_access,
+		mem_action, sw_data, uses_rw, rw_addr);
+endinterface
 
 interface branch_result_ifc ();
 	logic valid;
-	logic [`ADDR_WIDTH - 1 : 0] pc;
 	mips_core_pkg::BranchOutcome prediction;
 	mips_core_pkg::BranchOutcome outcome;
 	logic [`ADDR_WIDTH - 1 : 0] recovery_target;
-	logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] branch_id; 
-	logic color_bit; 
 
-	modport in  (input valid, pc, prediction, outcome, recovery_target, branch_id, color_bit);
-	modport out (output valid, pc, prediction, outcome, recovery_target, branch_id, color_bit);
+	modport in  (input valid, prediction, outcome, recovery_target);
+	modport out (output valid, prediction, outcome, recovery_target);
 endinterface
 
+interface d_cache_pass_through_ifc ();
+	logic is_mem_access;
+	logic [`DATA_WIDTH - 1 : 0] alu_result;
 
-interface inst_commit_ifc ();
-	logic valid; 
-	logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] active_list_id; 
+	logic uses_rw;
+	mips_core_pkg::MipsReg rw_addr;
 
-	modport in  (input valid, active_list_id);
-	modport out (output valid, active_list_id);
+	modport in  (input is_mem_access, alu_result, uses_rw, rw_addr);
+	modport out (output is_mem_access, alu_result, uses_rw, rw_addr);
 endinterface
 
-interface write_back_ifc (); 
-	logic valid; 
+interface write_back_ifc ();
 	logic uses_rw;	// Write Enable
-	logic [`PHYS_REG_NUM_INDEX - 1 : 0] rw_addr;
+	mips_core_pkg::MipsReg rw_addr;
 	logic [`DATA_WIDTH - 1 : 0] rw_data;
 
-	modport in  (input valid, uses_rw, rw_addr, rw_data);
-	modport out (output valid, uses_rw, rw_addr, rw_data);
+	modport in  (input uses_rw, rw_addr, rw_data);
+	modport out (output uses_rw, rw_addr, rw_data);
 endinterface
-
-
-interface hazard_signals_ifc (); 
-
-	logic ic_miss; 
-	logic dc_miss; 
-	logic branch_miss; 
-	logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] branch_id; 
-	logic color_bit; 
-
-	modport in (input ic_miss, dc_miss, branch_miss, color_bit, branch_id); 
-	modport out (output ic_miss, dc_miss, branch_miss, color_bit, branch_id);
-endinterface
-
 
 interface hazard_control_ifc ();
 	// Stall signal has higher priority
@@ -148,21 +101,4 @@ interface hazard_control_ifc ();
 
 	modport in  (input flush, stall);
 	modport out (output flush, stall);
-endinterface
-
-interface simulation_verification_ifc (); 
-	logic [`COMMIT_WINDOW_SIZE - 1 : 0] valid; 
-	logic signed [`DATA_WIDTH - 1 : 0] op2 [`COMMIT_WINDOW_SIZE];
-	logic [`ADDR_WIDTH - 1 : 0] pc [`COMMIT_WINDOW_SIZE]; 
-	logic [`COMMIT_WINDOW_SIZE - 1 : 0] is_store; 
-	logic [`COMMIT_WINDOW_SIZE - 1 : 0] is_load; 
-	logic [`ADDR_WIDTH - 1 : 0] mem_addr [`COMMIT_WINDOW_SIZE]; 
-	logic [`COMMIT_WINDOW_SIZE - 1 : 0]uses_rw; 
-	logic [`REG_NUM_INDEX - 1 : 0] rw_addr [`COMMIT_WINDOW_SIZE]; 
-	logic [`DATA_WIDTH - 1 : 0] data [`COMMIT_WINDOW_SIZE]; 
-	logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] active_list_id [`COMMIT_WINDOW_SIZE]; 
-	modport in (input valid, pc, uses_rw, rw_addr, data, is_load, is_store, mem_addr, 
-		active_list_id, op2);  
-	modport out (output valid, pc, uses_rw, rw_addr, data, is_load, is_store, mem_addr, 
-		active_list_id, op2);  
 endinterface

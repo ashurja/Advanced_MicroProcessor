@@ -12,7 +12,7 @@
  */
 `include "mips_core.svh"
 
-module pr_f2d (
+module pr_i2d (
 	input clk,    // Clock
 	input rst_n,  // Synchronous reset active low
 
@@ -28,7 +28,7 @@ module pr_f2d (
 
 	always_ff @(posedge clk)
 	begin
-		if(!rst_n || i_hc.flush)
+		if(~rst_n)
 		begin
 			o_pc.pc <= '0;
 			o_inst.valid <= 1'b0;
@@ -38,86 +38,134 @@ module pr_f2d (
 		begin
 			if (!i_hc.stall)
 			begin
-				o_pc.pc <= i_pc.pc;
-				o_inst.valid <= i_inst.valid;
-				o_inst.data <= i_inst.data;
+				if (i_hc.flush)
+				begin
+					o_pc.pc <= '0;
+					o_inst.valid <= 1'b0;
+					o_inst.data <= '0;
+				end
+				else
+				begin
+					o_pc.pc <= i_pc.pc;
+					o_inst.valid <= i_inst.valid;
+					o_inst.data <= i_inst.data;
+				end
 			end
 		end
 	end
 endmodule
 
-module pr_d2i (
+module pr_d2e (
 	input clk,    // Clock
 	input rst_n,  // Synchronous reset active low
 
 	hazard_control_ifc.in i_hc,
 
-	issue_input_ifc.in i_decode_pass_through, 
-	issue_input_ifc.out o_decode_pass_through
-); 
+	// Pipelined interfaces
+	pc_ifc.in  i_pc,
+	pc_ifc.out o_pc,
+
+	alu_input_ifc.in  i_alu_input,
+	alu_input_ifc.out o_alu_input,
+	alu_pass_through_ifc.in  i_alu_pass_through,
+	alu_pass_through_ifc.out o_alu_pass_through
+);
 
 	always_ff @(posedge clk)
 	begin
-		if (!rst_n || i_hc.flush)
+		if(~rst_n)
 		begin
-			o_decode_pass_through.valid <= '{default: 0}; 
-			o_decode_pass_through.phys_rs <= '{default: 0}; 
-			o_decode_pass_through.phys_rs_valid <= '{default: 0}; 
-			o_decode_pass_through.phys_rt <= '{default: 0}; 
-			o_decode_pass_through.phys_rt_valid <= '{default: 0}; 
-			o_decode_pass_through.uses_rs <= '{default: 0};  
-			o_decode_pass_through.uses_rt <= '{default: 0}; 
-			o_decode_pass_through.uses_immediate <= '{default: 0}; 
-			o_decode_pass_through.immediate <= '{default: 0}; 
-			o_decode_pass_through.is_branch <= '{default: 0}; 
-			o_decode_pass_through.prediction <= '{default: 0}; 
-			o_decode_pass_through.recovery_target <= '{default: 0};  
-			o_decode_pass_through.is_mem_access <='{default: 0}; 
-			o_decode_pass_through.mem_action <= '{default: 0}; 
-			o_decode_pass_through.active_list_id <= '{default: 0}; 
+			o_pc.pc <= '0;
+
+			o_alu_input.valid <= '0;
+			o_alu_input.alu_ctl <= ALUCTL_NOP;
+			o_alu_input.op1 <= '0;
+			o_alu_input.op2 <= '0;
+
+
+			o_alu_pass_through.is_branch <= 1'b0;
+			o_alu_pass_through.prediction <= NOT_TAKEN;
+			o_alu_pass_through.recovery_target <= '0;
+
+			o_alu_pass_through.is_mem_access <= 1'b0;
+			o_alu_pass_through.mem_action <= READ;
+
+			o_alu_pass_through.sw_data <= '0;
+
+			o_alu_pass_through.uses_rw <= 1'b0;
+			o_alu_pass_through.rw_addr <= zero;
 		end
-		else 
+		else
 		begin
 			if (!i_hc.stall)
 			begin
-				o_decode_pass_through.valid <= i_decode_pass_through.valid; 
-				o_decode_pass_through.phys_rs <= i_decode_pass_through.phys_rs; 
-				o_decode_pass_through.phys_rs_valid <= i_decode_pass_through.phys_rs_valid;
-				o_decode_pass_through.phys_rt <= i_decode_pass_through.phys_rt;
-				o_decode_pass_through.phys_rt_valid <= i_decode_pass_through.phys_rt_valid; 
-				o_decode_pass_through.uses_rs <= i_decode_pass_through.uses_rs; 
-				o_decode_pass_through.uses_rt <= i_decode_pass_through.uses_rt;
-				o_decode_pass_through.uses_immediate <= i_decode_pass_through.uses_immediate;
-				o_decode_pass_through.immediate <= i_decode_pass_through.immediate; 
-				o_decode_pass_through.is_branch <= i_decode_pass_through.is_branch; 
-				o_decode_pass_through.prediction <= i_decode_pass_through.prediction; 
-				o_decode_pass_through.recovery_target <= i_decode_pass_through.recovery_target; 
-				o_decode_pass_through.is_mem_access <= i_decode_pass_through.is_mem_access; 
-				o_decode_pass_through.mem_action <= i_decode_pass_through.mem_action; 
-				o_decode_pass_through.active_list_id <= i_decode_pass_through.active_list_id;
+				if (i_hc.flush)
+				begin
+					o_pc.pc <= '0;
+
+					o_alu_input.valid <= '0;
+					o_alu_input.alu_ctl <= ALUCTL_NOP;
+					o_alu_input.op1 <= '0;
+					o_alu_input.op2 <= '0;
+
+
+					o_alu_pass_through.is_branch <= 1'b0;
+					o_alu_pass_through.prediction <= NOT_TAKEN;
+					o_alu_pass_through.recovery_target <= '0;
+
+					o_alu_pass_through.is_mem_access <= 1'b0;
+					o_alu_pass_through.mem_action <= READ;
+
+					o_alu_pass_through.sw_data <= '0;
+
+					o_alu_pass_through.uses_rw <= 1'b0;
+					o_alu_pass_through.rw_addr <= zero;
+				end
+				else
+				begin
+					o_pc.pc <= i_pc.pc;
+
+					o_alu_input.valid <= i_alu_input.valid;
+					o_alu_input.alu_ctl <= i_alu_input.alu_ctl;
+					o_alu_input.op1 <= i_alu_input.op1;
+					o_alu_input.op2 <= i_alu_input.op2;
+
+
+					o_alu_pass_through.is_branch <= i_alu_pass_through.is_branch;
+					o_alu_pass_through.prediction <= i_alu_pass_through.prediction;
+					o_alu_pass_through.recovery_target <= i_alu_pass_through.recovery_target;
+
+					o_alu_pass_through.is_mem_access <= i_alu_pass_through.is_mem_access;
+					o_alu_pass_through.mem_action <= i_alu_pass_through.mem_action;
+
+					o_alu_pass_through.sw_data <= i_alu_pass_through.sw_data;
+
+					o_alu_pass_through.uses_rw <= i_alu_pass_through.uses_rw;
+					o_alu_pass_through.rw_addr <= i_alu_pass_through.rw_addr;
+				end
 			end
 		end
 	end
 endmodule
 
-
 module pr_e2m (
 	input clk,    // Clock
 	input rst_n,  // Synchronous reset active low
 
-	hazard_signals_ifc.in hazard_signal_in, 
-	misprediction_output_ifc.in misprediction_out, 
+	hazard_control_ifc.in i_hc,
 
+	// Pipelined interfaces
+	pc_ifc.in  i_pc,
+	pc_ifc.out o_pc,
 	d_cache_input_ifc.in  i_d_cache_input,
-	d_cache_controls_ifc.in  i_d_cache_controls,
-
 	d_cache_input_ifc.out o_d_cache_input,
-	d_cache_controls_ifc.out o_d_cache_controls
+	d_cache_pass_through_ifc.in  i_d_cache_pass_through,
+	d_cache_pass_through_ifc.out o_d_cache_pass_through
 );
 	// Does not register addr_next. See d_cache for details.
 	always_comb
 	begin
-		if (hazard_signal_in.dc_miss)
+		if (i_hc.stall)
 			o_d_cache_input.addr_next = o_d_cache_input.addr;
 		else
 			o_d_cache_input.addr_next = i_d_cache_input.addr_next;
@@ -127,41 +175,91 @@ module pr_e2m (
 	begin
 		if(~rst_n)
 		begin
+			o_pc.pc <= '0;
 
 			o_d_cache_input.valid <= 1'b0;
 			o_d_cache_input.mem_action <= READ;
 			o_d_cache_input.addr <= '0;
 			o_d_cache_input.data <= '0;
 
-			o_d_cache_controls.valid <= 1'b0; 
-			o_d_cache_controls.mem_action <= READ; 
-			o_d_cache_controls.bypass_possible <= '0; 
-			o_d_cache_controls.bypass_index <= '0; 
-			o_d_cache_controls.NOP <= 1'b1; 
-			o_d_cache_controls.dispatch_index <= '0; 
+			o_d_cache_pass_through.is_mem_access <= 1'b0;
+			o_d_cache_pass_through.alu_result <= '0;
+			o_d_cache_pass_through.uses_rw <= 1'b0;
+			o_d_cache_pass_through.rw_addr <= zero;
 		end
 		else
 		begin
-			if (!hazard_signal_in.dc_miss)
+			if (!i_hc.stall)
 			begin
-				o_d_cache_input.valid <= i_d_cache_input.valid;
-				o_d_cache_input.mem_action <= i_d_cache_input.mem_action;
-				o_d_cache_input.addr <= i_d_cache_input.addr;
-				o_d_cache_input.data <= i_d_cache_input.data;
+				if (i_hc.flush)
+				begin
+					o_pc.pc <= '0;
 
-				o_d_cache_controls.valid <= i_d_cache_controls.valid; 
-				o_d_cache_controls.mem_action <= i_d_cache_controls.mem_action; 
-				o_d_cache_controls.bypass_possible <= i_d_cache_controls.bypass_possible;
-				o_d_cache_controls.bypass_index <= i_d_cache_controls.bypass_index; 
-				o_d_cache_controls.NOP <= i_d_cache_controls.NOP; 
-				o_d_cache_controls.dispatch_index <= i_d_cache_controls.dispatch_index; 
+					o_d_cache_input.valid <= 1'b0;
+					o_d_cache_input.mem_action <= READ;
+					o_d_cache_input.addr <= '0;
+					o_d_cache_input.data <= '0;
+
+					o_d_cache_pass_through.is_mem_access <= 1'b0;
+					o_d_cache_pass_through.alu_result <= '0;
+					o_d_cache_pass_through.uses_rw <= 1'b0;
+					o_d_cache_pass_through.rw_addr <= zero;
+				end
+				else
+				begin
+					o_pc.pc <= i_pc.pc;
+
+					o_d_cache_input.valid <= i_d_cache_input.valid;
+					o_d_cache_input.mem_action <= i_d_cache_input.mem_action;
+					o_d_cache_input.addr <= i_d_cache_input.addr;
+					o_d_cache_input.data <= i_d_cache_input.data;
+
+					o_d_cache_pass_through.is_mem_access <= i_d_cache_pass_through.is_mem_access;
+					o_d_cache_pass_through.alu_result <= i_d_cache_pass_through.alu_result;
+					o_d_cache_pass_through.uses_rw <= i_d_cache_pass_through.uses_rw;
+					o_d_cache_pass_through.rw_addr <= i_d_cache_pass_through.rw_addr;
+				end
 			end
-
-			if (misprediction_out.invalidate_d_cache_output)
-				o_d_cache_controls.NOP <= 1'b1; 
 		end
 	end
 endmodule
-	
 
+module pr_m2w (
+	input clk,    // Clock
+	input rst_n,  // Synchronous reset active low
 
+	hazard_control_ifc.in i_hc,
+
+	// Pipelined interfaces
+	write_back_ifc.in  i_wb,
+	write_back_ifc.out o_wb
+);
+
+	always_ff @(posedge clk)
+	begin
+		if(~rst_n)
+		begin
+			o_wb.uses_rw <= 1'b0;
+			o_wb.rw_addr <= zero;
+			o_wb.rw_data <= '0;
+		end
+		else
+		begin
+			if (!i_hc.stall)
+			begin
+				if (i_hc.flush)
+				begin
+					o_wb.uses_rw <= 1'b0;
+					o_wb.rw_addr <= zero;
+					o_wb.rw_data <= '0;
+				end
+				else
+				begin
+					o_wb.uses_rw <= i_wb.uses_rw;
+					o_wb.rw_addr <= i_wb.rw_addr;
+					o_wb.rw_data <= i_wb.rw_data;
+				end
+			end
+		end
+	end
+endmodule

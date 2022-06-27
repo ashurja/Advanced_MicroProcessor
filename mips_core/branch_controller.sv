@@ -19,21 +19,22 @@ module branch_controller (
 	branch_decoded_ifc.hazard dec_branch_decoded,
 
 	// Feedback
+	pc_ifc.in ex_pc,
 	branch_result_ifc.in ex_branch_result
 );
 	logic request_prediction;
 
 	// Change the following line to switch predictor
-	always_taken PREDICTOR (
+	branch_predictor_2bit PREDICTOR (
 		.clk, .rst_n,
 
 		.i_req_valid     (request_prediction),
-		.i_req_pc        (dec_pc.pc), 
+		.i_req_pc        (dec_pc.pc),
 		.i_req_target    (dec_branch_decoded.target),
 		.o_req_prediction(dec_branch_decoded.prediction),
 
 		.i_fb_valid      (ex_branch_result.valid),
-		.i_fb_pc         (ex_branch_result.pc), 
+		.i_fb_pc         (ex_pc.pc),
 		.i_fb_prediction (ex_branch_result.prediction),
 		.i_fb_outcome    (ex_branch_result.outcome)
 	);
@@ -48,31 +49,6 @@ module branch_controller (
 	end
 
 endmodule
-
-module always_not_taken (
-	input clk,    // Clock
-	input rst_n,  // Synchronous reset active low
-
-	// Request
-	input logic i_req_valid,
-	input logic [`ADDR_WIDTH - 1 : 0] i_req_pc,
-	input logic [`ADDR_WIDTH - 1 : 0] i_req_target,
-	output mips_core_pkg::BranchOutcome o_req_prediction,
-
-	// Feedback
-	input logic i_fb_valid,
-	input logic [`ADDR_WIDTH - 1 : 0] i_fb_pc,
-	input mips_core_pkg::BranchOutcome i_fb_prediction,
-	input mips_core_pkg::BranchOutcome i_fb_outcome
-);
-
-	always_comb
-	begin
-		o_req_prediction = NOT_TAKEN;
-	end
-
-endmodule
-
 
 module always_taken (
 	input clk,    // Clock
@@ -124,7 +100,31 @@ module back_taken_forw_not_taken (
 
 endmodule
 
-module bi_modal__2bit (
+module branch_predictor_always_not_taken (
+	input clk,    // Clock
+	input rst_n,  // Synchronous reset active low
+
+	// Request
+	input logic i_req_valid,
+	input logic [`ADDR_WIDTH - 1 : 0] i_req_pc,
+	input logic [`ADDR_WIDTH - 1 : 0] i_req_target,
+	output mips_core_pkg::BranchOutcome o_req_prediction,
+
+	// Feedback
+	input logic i_fb_valid,
+	input logic [`ADDR_WIDTH - 1 : 0] i_fb_pc,
+	input mips_core_pkg::BranchOutcome i_fb_prediction,
+	input mips_core_pkg::BranchOutcome i_fb_outcome
+);
+
+	always_comb
+	begin
+		o_req_prediction = NOT_TAKEN;
+	end
+
+endmodule
+
+module branch_predictor_2bit (
 	input clk,    // Clock
 	input rst_n,  // Synchronous reset active low
 
@@ -161,7 +161,7 @@ module bi_modal__2bit (
 	begin
 		if(~rst_n)
 		begin
-			counter <= 2'b10;	// Weakly taken
+			counter <= 2'b01;	// Weakly not taken
 		end
 		else
 		begin

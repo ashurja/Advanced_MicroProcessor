@@ -139,7 +139,7 @@ reg [DATA_WIDTH-1:0]    mem [0:RAM_DEPTH-1];
 
 	// Memory Write Block Port 0
 	// Write Operation : When web0 = 0, csb0 = 0
-	always @ (posedge clk0)
+	always @ (negedge clk0)
 	begin : MEM_WRITE0
 		if (!csb0_reg)
 				mem[addr0_reg] = din0_reg;
@@ -147,7 +147,7 @@ reg [DATA_WIDTH-1:0]    mem [0:RAM_DEPTH-1];
 
 	// Memory Read Block Port 1
 	// Read Operation : When web1 = 1, csb1 = 0
-	always @ (posedge clk1)
+	always @ (negedge clk1)
 	begin : MEM_READ1
 		if (!csb1_reg)
 			 dout1 <= /* #(DELAY) */ mem[addr1_reg];
