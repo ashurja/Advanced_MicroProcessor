@@ -24,7 +24,7 @@ module branch_controller (
 	logic request_prediction;
 
 	// Change the following line to switch predictor
-	always_taken PREDICTOR (
+	bi_modal_2bit PREDICTOR (
 		.clk, .rst_n,
 
 		.i_req_valid     (request_prediction),
@@ -124,7 +124,7 @@ module back_taken_forw_not_taken (
 
 endmodule
 
-module bi_modal__2bit (
+module bi_modal_2bit (
 	input clk,    // Clock
 	input rst_n,  // Synchronous reset active low
 

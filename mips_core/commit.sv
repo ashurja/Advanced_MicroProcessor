@@ -121,7 +121,7 @@ module commit (
                     num_stores++;
                 if (o_commit_out.reclaim_valid[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] && i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0] <= o_commit_out.last_valid_commit_idx)
                     num_writes++;
-                if (i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0] <= o_commit_out.last_valid_commit_idx)
+                if (i <= o_commit_out.last_valid_commit_idx)
                 begin
                     next_commit_state.entry_available_bit[curr_commit_state.oldest_inst_pointer + i[`ACTIVE_LIST_SIZE_INDEX - 1 : 0]] = 1'b1; 
                 end
@@ -158,28 +158,28 @@ module commit (
             commit_traverse_pointer = curr_commit_state.oldest_inst_pointer + i[`ACTIVE_LIST_SIZE_INDEX - 1 : 0]; 
             if (next_commit_state.ready_to_commit[commit_traverse_pointer])
             begin
-                cmpt_commit_valid[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = 1'b1; 
+                cmpt_commit_valid[i] = 1'b1; 
 
                 if (curr_branch_state.branch_id[curr_commit_state.branch_read_pointer + branch_counter[`BRANCH_NUM_INDEX - 1 : 0]] == commit_traverse_pointer &&
                     curr_branch_state.valid[curr_commit_state.branch_read_pointer + branch_counter[`BRANCH_NUM_INDEX - 1 : 0]])
                 begin
-                    o_commit_out.branch_valid[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = 1'b1; 
+                    o_commit_out.branch_valid[i] = 1'b1; 
                     branch_counter++; 
                 end
 
                 if (curr_active_state.uses_rw[commit_traverse_pointer])
                 begin
-                    o_commit_out.reclaim_valid[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = 1'b1; 
-                    o_commit_out.reclaim_reg[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = curr_active_state.reclaim_list[commit_traverse_pointer]; 
+                    o_commit_out.reclaim_valid[i] = 1'b1; 
+                    o_commit_out.reclaim_reg[i] = curr_active_state.reclaim_list[commit_traverse_pointer]; 
                 end
 
                 if (curr_active_state.is_load[commit_traverse_pointer])
                 begin
-                    o_commit_out.load_valid[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = 1'b1; 
+                    o_commit_out.load_valid[i] = 1'b1; 
                 end
                 else if (curr_active_state.is_store[commit_traverse_pointer])
                 begin
-                    o_commit_out.store_valid[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = 1'b1; 
+                    o_commit_out.store_valid[i] = 1'b1; 
                 end
             end
         end
@@ -224,29 +224,29 @@ module commit (
                     if (next_commit_state.ready_to_commit[sim_traverse_pointer])
                     begin
 
-                        simulation_verification.valid[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = 1'b1; 
-                        simulation_verification.active_list_id[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = sim_traverse_pointer; 
-                        simulation_verification.pc[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = curr_active_state.pc[sim_traverse_pointer]; 
-                        simulation_verification.op2[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = op2[sim_traverse_pointer]; 
+                        simulation_verification.valid[i] = 1'b1; 
+                        simulation_verification.active_list_id[i] = sim_traverse_pointer; 
+                        simulation_verification.pc[i] = curr_active_state.pc[sim_traverse_pointer]; 
+                        simulation_verification.op2[i] = op2[sim_traverse_pointer]; 
                         if (curr_active_state.uses_rw[sim_traverse_pointer])
                         begin
                             phys_rw = curr_active_state.rw_addr[sim_traverse_pointer]; 
-                            simulation_verification.uses_rw[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = 1'b1; 
-                            simulation_verification.rw_addr[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = curr_rename_state.reverse_rename_map[phys_rw]; 
-                            simulation_verification.data[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = next_rename_state.merged_reg_file[phys_rw]; 
+                            simulation_verification.uses_rw[i] = 1'b1; 
+                            simulation_verification.rw_addr[i] = curr_rename_state.reverse_rename_map[phys_rw]; 
+                            simulation_verification.data[i] = next_rename_state.merged_reg_file[phys_rw]; 
                         end
 
                         if (curr_active_state.is_load[sim_traverse_pointer])
                         begin
-                            simulation_verification.is_load[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = 1'b1; 
-                            simulation_verification.mem_addr[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = curr_load_queue.mem_addr[curr_commit_state.load_commit_pointer + load_counter[`LOAD_STORE_SIZE_INDEX - 1 : 0]]; 
+                            simulation_verification.is_load[i] = 1'b1; 
+                            simulation_verification.mem_addr[i] = curr_load_queue.mem_addr[curr_commit_state.load_commit_pointer + load_counter[`LOAD_STORE_SIZE_INDEX - 1 : 0]]; 
                             load_counter++; 
                         end
                         else if (curr_active_state.is_store[sim_traverse_pointer])
                         begin
-                            simulation_verification.is_store[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = 1'b1; 
-                            simulation_verification.mem_addr[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = curr_store_queue.mem_addr[curr_commit_state.store_commit_pointer + store_counter[`LOAD_STORE_SIZE_INDEX - 1 : 0]]; 
-                            simulation_verification.data[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] = curr_store_queue.sw_data[curr_commit_state.store_commit_pointer + store_counter[`LOAD_STORE_SIZE_INDEX - 1 : 0]];  
+                            simulation_verification.is_store[i] = 1'b1; 
+                            simulation_verification.mem_addr[i] = curr_store_queue.mem_addr[curr_commit_state.store_commit_pointer + store_counter[`LOAD_STORE_SIZE_INDEX - 1 : 0]]; 
+                            simulation_verification.data[i] = curr_store_queue.sw_data[curr_commit_state.store_commit_pointer + store_counter[`LOAD_STORE_SIZE_INDEX - 1 : 0]];  
                             store_counter++; 
                         end
                     end

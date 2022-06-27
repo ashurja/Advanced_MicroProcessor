@@ -193,9 +193,9 @@ module reg_file (
 		begin
 			if (i_commit_out.commit_valid)
 			begin
-				if (i_commit_out.reclaim_valid[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]] && i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0] <= i_commit_out.last_valid_commit_idx)
+				if (i_commit_out.reclaim_valid[i] && i <= i_commit_out.last_valid_commit_idx)
 				begin
-					next_rename_state.free_list[curr_commit_state.free_tail_pointer + reclaim[`PHYS_REG_NUM_INDEX - 1 : 0]] = i_commit_out.reclaim_reg[i[`COMMIT_WINDOW_SIZE_INDEX - 1 : 0]]; 
+					next_rename_state.free_list[curr_commit_state.free_tail_pointer + reclaim[`PHYS_REG_NUM_INDEX - 1 : 0]] = i_commit_out.reclaim_reg[i]; 
 					reclaim++; 
 				end
 			end
@@ -231,6 +231,23 @@ module reg_file (
 	end
 
 `ifdef SIMULATION
+
+	logic [`DATA_WIDTH - 1 : 0] m_reg_file_1 [16]; 
+	logic [`DATA_WIDTH - 1 : 0] m_reg_file_2 [16];
+	logic [`DATA_WIDTH - 1 : 0] m_reg_file_3 [16];
+	logic [`DATA_WIDTH - 1 : 0] m_reg_file_4 [16];
+
+	always_comb
+	begin
+		for (int i = 0; i < 16; i++)
+		begin
+			m_reg_file_1[i] = curr_rename_state.merged_reg_file[i]; 	
+			m_reg_file_2[i] = curr_rename_state.merged_reg_file[i + 16]; 
+			m_reg_file_3[i] = curr_rename_state.merged_reg_file[i + 32]; 
+			m_reg_file_4[i] = curr_rename_state.merged_reg_file[i + 48]; 
+		end
+	end
+
 	always_ff @(posedge clk)
 	begin
 		if (ds_miss && !front_pipeline_halt) stats_event("delay_slot_miss");

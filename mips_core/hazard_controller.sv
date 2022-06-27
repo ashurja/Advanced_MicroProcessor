@@ -227,6 +227,8 @@ module hazard_controller (
 
 /************************************  SIMULATION AND PROFILING *************************************/
 /***************************************************************************************************/
+
+`ifdef SIMULATION
 	logic dc_miss_checkpoint; 
 	logic mem_halt; 
 
@@ -253,10 +255,8 @@ module hazard_controller (
 			dc_miss_checkpoint <= ~mem_done; 
 			ic_miss_checkpoint <= ~if_i_cache_output.valid; 
 		end
-		
 	end
 
-`ifdef SIMULATION
 	always_ff @(posedge clk)
 	begin
 		if (ic_miss && !inst_halt) stats_event("ic_miss");

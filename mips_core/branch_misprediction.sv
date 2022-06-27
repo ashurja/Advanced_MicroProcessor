@@ -191,7 +191,6 @@ module branch_misprediction  (
     logic [`LOAD_STORE_SIZE_INDEX -  1 : 0] store_queue_traverse_pointer; 
 
     logic load_write_found; 
-    logic load_read_found; 
     logic store_write_found; 
 
     logic [`LOAD_STORE_SIZE - 1 : 0] cmpt_store_write_pointer; 
@@ -200,9 +199,6 @@ module branch_misprediction  (
     logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] new_load_write_pointer; 
     logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] new_store_write_pointer; 
     
-    logic [`LOAD_STORE_SIZE - 1 : 0] cmpt_load_read_pointer; 
-
-    logic [`LOAD_STORE_SIZE_INDEX - 1 : 0] new_load_read_pointer; 
 
 	priority_encoder# (
 		.m(`LOAD_STORE_SIZE),
@@ -225,23 +221,12 @@ module branch_misprediction  (
 		.y(new_store_write_pointer)
 	);
 
-	priority_encoder# (
-		.m(`LOAD_STORE_SIZE),
-		.n(`LOAD_STORE_SIZE_INDEX)
-    ) load_read_pointer_retriever (
-		.x(cmpt_load_read_pointer),
-		.bottom_up(1'b1),
-		.valid_in(load_read_found),
-		.y(new_load_read_pointer)
-	);
-
     always_comb
     begin : handle_d_cache_input_queues
         misprediction_out.invalidate_d_cache_output = 1'b0; 
 
         misprediction_load_queue.entry_available_bit = curr_load_queue.entry_available_bit; 
         misprediction_load_queue.active_list_id = curr_load_queue.active_list_id; 
-        misprediction_load_queue.read_pointer = curr_load_queue.read_pointer; 
         misprediction_load_queue.entry_write_pointer = curr_load_queue.entry_write_pointer; 
         misprediction_load_queue.valid = curr_load_queue.valid; 
 
@@ -255,7 +240,6 @@ module branch_misprediction  (
         store_queue_traverse_pointer = '0; 
 
         cmpt_load_write_pointer = '0; 
-        cmpt_load_read_pointer = '0;
         cmpt_store_write_pointer = '0; 
  
         if (hazard_signal_in.branch_miss)
@@ -308,8 +292,6 @@ module branch_misprediction  (
                 load_queue_traverse_pointer = (curr_commit_state.load_commit_pointer + i[`LOAD_STORE_SIZE_INDEX - 1 : 0]); 
                 if (misprediction_load_queue.entry_available_bit[load_queue_traverse_pointer])
                     cmpt_load_write_pointer[i] = 1'b1; 
-                if (misprediction_load_queue.valid[load_queue_traverse_pointer] && !misprediction_load_queue.entry_available_bit[load_queue_traverse_pointer])
-                    cmpt_load_read_pointer[i] = 1'b1; 
             end
 
             for (int i = 0; i < `LOAD_STORE_SIZE; i++)
@@ -322,9 +304,6 @@ module branch_misprediction  (
 
             if (load_write_found) misprediction_load_queue.entry_write_pointer = new_load_write_pointer + curr_commit_state.load_commit_pointer; 
             if (store_write_found) misprediction_store_queue.entry_write_pointer = new_store_write_pointer + curr_commit_state.store_commit_pointer; 
-
-            if (load_read_found) misprediction_load_queue.read_pointer = new_load_read_pointer + curr_commit_state.load_commit_pointer; 
-            else misprediction_load_queue.read_pointer = misprediction_load_queue.entry_write_pointer;  
 
             if (hazard_signal_in.dc_miss) 
             begin
