@@ -1,4 +1,3 @@
-
 //SEL 0 SRRIP 
 //SEL 1 BRRIP
 
@@ -40,15 +39,20 @@ module DRRIP #(
 	logic [ASSOCIATIVITY - 1 : 0] alt_evict_cmp; 
 	logic [ASSOCIATIVITY - 1 : 0] last_evict_cmp; 
 
-	logic not_age, alt_valid, last_valid; 
-	logic aged; 
+	logic evict_valid, alt_valid, last_valid; 
 
-	logic [SET_SIZE - 1 : 0] evict_latch;  
 	logic [SET_SIZE - 1 : 0] evict_find; 
 	logic [SET_SIZE - 1 : 0] alt_evict_find; 
 	logic [SET_SIZE - 1 : 0] last_evict_find; 
 
-	logic [BRRIP_COUNTER_LEN - 1 : 0] brrip_counter; 
+	logic curr_aged_state; 
+	logic next_aged_state; 
+
+	logic [SET_SIZE - 1 : 0] curr_evict_way;  
+	logic [SET_SIZE - 1 : 0] next_evict_way;  
+
+	logic [BRRIP_COUNTER_LEN - 1 : 0] curr_brrip_counter; 
+	logic [BRRIP_COUNTER_LEN - 1 : 0] next_brrip_counter; 
 
 	always_comb
 	begin
@@ -56,7 +60,7 @@ module DRRIP #(
 		alt_evict_cmp = 0; 
 		last_evict_cmp = 0; 
 
-		if (valid && update)
+		if (update && miss)
 		begin
 			for (int i = 0; i < ASSOCIATIVITY; i++) 
 			begin
@@ -73,7 +77,7 @@ module DRRIP #(
 	) evict_way_retriever (
 		.x(evict_cmp),
 		.bottom_up(1'b1),
-		.valid_in(not_age),
+		.valid_in(evict_valid),
 		.y(evict_find)
 	); 
 
@@ -99,42 +103,39 @@ module DRRIP #(
 
 	always_comb
 	begin
-		evict_way = 0; 
+		next_evict_way = curr_evict_way; 
 	
-		if (valid && update)
+		if (update)
 		begin
 			if (miss & !halt) 
 			begin
-				if (not_age) 
+				if (evict_valid) 
 				begin
-					evict_way = evict_find; 
+					next_evict_way = evict_find; 
 				end
 				else if (alt_valid) 
 				begin
-					evict_way = alt_evict_find; 
+					next_evict_way = alt_evict_find; 
 				end
 				else if(last_valid) 
 				begin
-					evict_way = last_evict_find; 
+					next_evict_way = last_evict_find; 
 				end
 				else 
 				begin
-					evict_way = 0; 
+					next_evict_way = 0; 
 				end
 			end
-
-			else evict_way = evict_latch; 
 		end
+
+		evict_way = next_evict_way; 
 	end
 
 	always_comb
 	begin
 		updated_table_entry = main_table_entry; 
-		if (!rst_n)
-		begin
-			updated_table_entry = '{default: DISTANT}; 
-		end
-		else if (valid && update)
+
+		if (update)
 		begin
 			if (hit && !halt) 
 			begin
@@ -142,7 +143,7 @@ module DRRIP #(
 			end
 			else if (miss)
 			begin
-				if (!not_age && !aged) 
+				if (!evict_valid && !curr_aged_state) 
 				begin
 					for (int i = 0; i < ASSOCIATIVITY; i++) 
 						if (main_table_entry[i] < DISTANT) 
@@ -152,10 +153,29 @@ module DRRIP #(
 				begin
 					if (SEL) 
 					begin
-						updated_table_entry[evict_latch] = (brrip_counter == 0) ? LONG : DISTANT; 
+						updated_table_entry[curr_evict_way] = (curr_brrip_counter == 0) ? LONG : DISTANT; 
 					end
-					else updated_table_entry[evict_latch] = RRPV; 
+					else updated_table_entry[curr_evict_way] = RRPV; 
 				end
+			end
+		end
+	end
+
+	always_comb
+	begin
+		next_brrip_counter = curr_brrip_counter; 
+		next_aged_state = curr_aged_state; 
+
+		if (update && miss)
+		begin
+			if (!halt)
+			begin
+				next_brrip_counter = curr_brrip_counter + 1'b1; 
+				next_aged_state = 1'b0; 
+			end
+			else if (evict_valid)
+			begin
+				next_aged_state = 1'b1; 
 			end
 		end
 	end
@@ -164,29 +184,15 @@ module DRRIP #(
 	begin
 		if (!rst_n) 
 		begin
-			aged <= 1'b0; 
-			evict_latch <= 0; 
+			curr_aged_state <= 1'b0; 
+			curr_evict_way <= 0; 
 		end
 
-		else if (valid && update)
+		else 
 		begin
-
-			if (miss)
-			begin
-
-				if (!halt)
-				begin
-					brrip_counter <= (brrip_counter + 1'b1) % (2 ** BRRIP_COUNTER_LEN); 
-					evict_latch <= evict_way; 
-					aged <= 1'b0; 
-				end
-
-				else if (not_age)
-				begin
-					aged <= 1'b1; 
-				end
-
-			end
+			curr_brrip_counter <= next_brrip_counter; 
+			curr_evict_way <= next_evict_way; 
+			curr_aged_state <= next_aged_state;
 		end
 	end
 

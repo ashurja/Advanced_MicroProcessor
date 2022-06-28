@@ -1,3 +1,5 @@
+`include "mips_core.svh"
+
 module SHiP #(
     parameter ASSOCIATIVITY, 
     parameter SET_SIZE,
@@ -8,7 +10,7 @@ module SHiP #(
    	input clk,   // Clock
 	input rst_n,   // Synchronous reset active low
 	input valid,
-	input logic [`ADDR_WIDTH - 1 : 0] addr,
+	input logic [`ADDR_WIDTH - 1 : 0] pc,
 	input logic halt,
 	input logic hit, 
 	input logic miss,  
@@ -18,10 +20,10 @@ module SHiP #(
 
     output logic [M - 1 : 0] RRPV
 );
-    localparam TABLE_LEN = 16192; 
+    localparam TABLE_LEN = 8096; 
     localparam COUNTER_LEN = 2; 
     localparam COUNTER_MAX = COUNTER_LEN ** 2 - 1; 
-    localparam SIG_LEN = 14; 
+    localparam SIG_LEN = $clog2(TABLE_LEN); 
 
 	localparam DISTANT = 2 ** M - 1; 
 	localparam LONG = 2 ** M - 2; 
@@ -40,7 +42,7 @@ module SHiP #(
         curr_sig = 0;
         evict_sig = 0; 
 
-        if (valid) curr_sig = addr[`ADDR_WIDTH - 1 : `ADDR_WIDTH - SIG_LEN]; 
+        if (valid) curr_sig = pc[`ADDR_WIDTH - 1 : `ADDR_WIDTH - SIG_LEN]; 
         if (valid) evict_sig = signature[evict_way][i_index]; 
     end
 

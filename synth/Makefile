@@ -25,10 +25,10 @@ build/sram_%_freepdk45_analytical_TT_1p0V_25C.lib : config.py
 		FREEPDK45=$(CSE148_TOOLS)/FreePDK45 \
 		OPENRAM_HOME=$(CSE148_TOOLS)/OpenRAM/compiler \
 		OPENRAM_TECH=$(CSE148_TOOLS)/OpenRAM/technology \
-		$(CSE148_TOOLS)/venv/bin/python3 $(CSE148_TOOLS)/OpenRAM/compiler/openram.py config
+		python3 $(CSE148_TOOLS)/OpenRAM/compiler/openram.py config
 
 netlist.v: mips_core.v $(ram_targets) synthesis.ys
-	bash -c "source ~/cse148/oss-cad-suite/environment && yosys -s synthesis.ys -l synthesis.log -t"
+	bash -c "source $(CSE148_TOOLS)/oss-cad-suite/environment && yosys -s synthesis.ys -l synthesis.log -t"
 
 syn: netlist.v
 

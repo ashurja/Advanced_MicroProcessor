@@ -8,25 +8,37 @@ module priority_encoder #(
     output valid_in, // indicates the data input x is valid.
     output logic [n - 1 : 0] y
 ); 
-    integer i;
+    logic done; 
     // the body of the m-to-n priority encoder
     assign valid_in = |x;
 
     always_comb 
     begin
-        if (!bottom_up)
+        y = '0; 
+        if (bottom_up)
         begin
-            i = m - 1;
-            while(x[i] == 0 && i > 0 ) i = i - 1;
-            y = i[n - 1 : 0];
+            for (int i = m - 1; i >= 0; i--)
+            begin
+                done = 1'b0; 
+                if (x[i] != 0) done = 1'b1; 
+                if (done == 1'b1) y = i[n - 1 : 0];
+            end
         end
         else 
         begin
-            i = 0;
-            while(x[i] == 0 && i < m) i = i + 1;
-            y = i[n - 1 : 0];
+            for (int i = 0; i < m; i++)
+            begin
+                done = 1'b0; 
+                if (x[i] != 0) done = 1'b1; 
+                if (done == 1'b1) y = i[n - 1 : 0];
+            end
         end
     end
+
+
+
+
+
 endmodule
 
 //credits 
