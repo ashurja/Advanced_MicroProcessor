@@ -24,7 +24,7 @@ module branch_controller (
 	logic request_prediction;
 
 	// Change the following line to switch predictor
-	bi_modal_2bit PREDICTOR (
+	back_taken_forw_not_taken PREDICTOR (
 		.clk, .rst_n,
 
 		.i_req_valid     (request_prediction),

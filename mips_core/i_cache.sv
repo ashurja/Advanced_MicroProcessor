@@ -26,7 +26,7 @@
 
 module i_cache #(
 	parameter INDEX_WIDTH = 4,
-	parameter BLOCK_OFFSET_WIDTH = 3
+	parameter BLOCK_OFFSET_WIDTH = 2
 	)(
 	// General signals
 	input clk,    // Clock
