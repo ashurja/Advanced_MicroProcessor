@@ -2,6 +2,7 @@ module TAGE (
 	input clk,    // Clock
 	input rst_n,  // Synchronous reset active low
     
+	branch_controls_ifc.in curr_branch_controls,
 	// Request
 	input logic i_req_valid,
 	input logic [`ADDR_WIDTH - 1 : 0] i_req_pc,
@@ -33,7 +34,6 @@ module TAGE (
 	localparam T8_LEN = 512; 
 
 	localparam BASE_LEN = 4096; 
-	localparam GHR_LEN = 256; 
 
 	logic [NUM_TABLES - 1 : 0] curr_u_bits_from_all_t; 
 	logic [NUM_TABLES - 1 : 0] prev_u_bits_from_all_t; 
@@ -57,10 +57,6 @@ module TAGE (
 
 	logic eviction_index_found; 
 	logic [`ADDR_WIDTH - 1 : 0] i_req_prev_pc; 
-	logic GHR_MSB; 
-
-	logic [GHR_LEN - 1 : 0] next_GHR; 
-	logic [GHR_LEN - 1 : 0] GHR; 
 
 	logic reset_u_counters; 
 	logic [17 : 0] counter_for_u_reset; 
@@ -70,12 +66,10 @@ module TAGE (
 	logic reset_u_msb; 
 
 	always_comb begin : setup
-		next_GHR = GHR; 
 		reset_u_counters = 1'b0; 
 		reset_u_lsb = 1'b0; 
 		reset_u_msb = 1'b0; 
 
-		if (i_fb_valid && (i_fb_outcome != i_fb_prediction)) next_GHR[0] = i_fb_outcome; 
 		if (counter_for_u_reset == 256000)
 		begin
 			reset_u_counters = 1'b1;
@@ -103,7 +97,6 @@ module TAGE (
 	TABLE# (
 		.TABLE_LEN(T1_LEN),
 		.TAG_WIDTH(TAG_WIDTH_SMALL), 
-		.GHR_LEN, 
 		.L1, 
 		.GHR_LEN_HASHING(L1)
 	) T1 (
@@ -123,7 +116,7 @@ module TAGE (
 		.age(select_t_for_age[1]),
 		.update_u_counter(update_u_counters[1]),
 		.update_pred_counter(update_prediction_counters[1]),
-		.GHR(next_GHR),
+		.GHR(curr_branch_controls.GHR),
 		.prediction(curr_pred_from_all_t[1]),
 		.hit(curr_hits_from_all_t[1]), 
 		.u_bit(curr_u_bits_from_all_t[1]),
@@ -134,7 +127,6 @@ module TAGE (
 	TABLE# (
 		.TABLE_LEN(T2_LEN),
 		.TAG_WIDTH(TAG_WIDTH_SMALL), 
-		.GHR_LEN, 
 		.L1, 
 		.GHR_LEN_HASHING(L1 * alpha)
 	) T2 (
@@ -154,7 +146,7 @@ module TAGE (
 		.age(select_t_for_age[2]),
 		.update_u_counter(update_u_counters[2]),
 		.update_pred_counter(update_prediction_counters[2]),
-		.GHR(next_GHR),
+		.GHR(curr_branch_controls.GHR),
 		.prediction(curr_pred_from_all_t[2]),
 		.hit(curr_hits_from_all_t[2]), 
 		.u_bit(curr_u_bits_from_all_t[2]),
@@ -164,7 +156,6 @@ module TAGE (
 	TABLE# (
 		.TABLE_LEN(T3_LEN),
 		.TAG_WIDTH(TAG_WIDTH_SMALL), 
-		.GHR_LEN, 
 		.L1, 
 		.GHR_LEN_HASHING(L1 * (alpha ** 2))
 	) T3 (
@@ -184,7 +175,7 @@ module TAGE (
 		.age(select_t_for_age[3]),
 		.update_u_counter(update_u_counters[3]),
 		.update_pred_counter(update_prediction_counters[3]),
-		.GHR(next_GHR),
+		.GHR(curr_branch_controls.GHR),
 		.prediction(curr_pred_from_all_t[3]),
 		.hit(curr_hits_from_all_t[3]), 
 		.u_bit(curr_u_bits_from_all_t[3]),
@@ -194,7 +185,6 @@ module TAGE (
 	TABLE# (
 		.TABLE_LEN(T4_LEN),
 		.TAG_WIDTH(TAG_WIDTH_SMALL), 
-		.GHR_LEN, 
 		.L1, 
 		.GHR_LEN_HASHING(L1 * (alpha ** 3))
 	) T4 (
@@ -214,7 +204,7 @@ module TAGE (
 		.age(select_t_for_age[4]),
 		.update_u_counter(update_u_counters[4]),
 		.update_pred_counter(update_prediction_counters[4]),
-		.GHR(next_GHR),
+		.GHR(curr_branch_controls.GHR),
 		.prediction(curr_pred_from_all_t[4]),
 		.hit(curr_hits_from_all_t[4]), 
 		.u_bit(curr_u_bits_from_all_t[4]),
@@ -224,7 +214,6 @@ module TAGE (
 	TABLE# (
 		.TABLE_LEN(T5_LEN),
 		.TAG_WIDTH(TAG_WIDTH_SMALL), 
-		.GHR_LEN, 
 		.L1, 
 		.GHR_LEN_HASHING(L1 * (alpha ** 4))
 	) T5 (
@@ -244,7 +233,7 @@ module TAGE (
 		.age(select_t_for_age[5]),
 		.update_u_counter(update_u_counters[5]),
 		.update_pred_counter(update_prediction_counters[5]),
-		.GHR(next_GHR),
+		.GHR(curr_branch_controls.GHR),
 		.prediction(curr_pred_from_all_t[5]),
 		.hit(curr_hits_from_all_t[5]), 
 		.u_bit(curr_u_bits_from_all_t[5]),
@@ -254,7 +243,6 @@ module TAGE (
 	TABLE# (
 		.TABLE_LEN(T6_LEN),
 		.TAG_WIDTH(TAG_WIDTH_BIG), 
-		.GHR_LEN, 
 		.L1, 
 		.GHR_LEN_HASHING(L1 * (alpha ** 5))
 	) T6 (
@@ -274,7 +262,7 @@ module TAGE (
 		.age(select_t_for_age[6]),
 		.update_u_counter(update_u_counters[6]),
 		.update_pred_counter(update_prediction_counters[6]),
-		.GHR(next_GHR),
+		.GHR(curr_branch_controls.GHR),
 		.prediction(curr_pred_from_all_t[6]),
 		.hit(curr_hits_from_all_t[6]), 
 		.u_bit(curr_u_bits_from_all_t[6]),
@@ -285,7 +273,6 @@ module TAGE (
 	TABLE# (
 		.TABLE_LEN(T7_LEN),
 		.TAG_WIDTH(TAG_WIDTH_BIG), 
-		.GHR_LEN, 
 		.L1, 
 		.GHR_LEN_HASHING(L1 * (alpha ** 6))
 	) T7 (
@@ -305,7 +292,7 @@ module TAGE (
 		.age(select_t_for_age[7]),
 		.update_u_counter(update_u_counters[7]),
 		.update_pred_counter(update_prediction_counters[7]),
-		.GHR(next_GHR),
+		.GHR(curr_branch_controls.GHR),
 		.prediction(curr_pred_from_all_t[7]),
 		.hit(curr_hits_from_all_t[7]), 
 		.u_bit(curr_u_bits_from_all_t[7]),
@@ -316,7 +303,6 @@ module TAGE (
 	TABLE# (
 		.TABLE_LEN(T8_LEN),
 		.TAG_WIDTH(TAG_WIDTH_BIG), 
-		.GHR_LEN, 
 		.L1, 
 		.GHR_LEN_HASHING(L1 * (alpha ** 7))
 	) T8 (
@@ -336,7 +322,7 @@ module TAGE (
 		.age(select_t_for_age[8]),
 		.update_u_counter(update_u_counters[8]),
 		.update_pred_counter(update_prediction_counters[8]),
-		.GHR(next_GHR),
+		.GHR(curr_branch_controls.GHR),
 		.prediction(curr_pred_from_all_t[8]),
 		.hit(curr_hits_from_all_t[8]), 
 		.u_bit(curr_u_bits_from_all_t[8]),
@@ -477,29 +463,6 @@ module TAGE (
 		end
 	end
 
-	always_ff @(posedge clk)
-	begin : update_GHR
-		if (!rst_n)
-		begin
-			GHR <= 0; 
-		end
-		else 
-		begin
-			if (i_req_valid && (i_req_pc != i_req_prev_pc)) 
-			begin
-				for (int i = 1; i < GHR_LEN; i++)
-				begin
-					 GHR[i] <= next_GHR[i - 1]; 
-				end
-				GHR[0] <= o_req_prediction; 
-				
-			end
-			else if (i_fb_valid)
-			begin
-				GHR <= next_GHR; 
-			end
-		end
-	end
 
 	always_ff @(posedge clk) 
 	begin : resets
@@ -567,7 +530,6 @@ endmodule
 module TABLE #(
     parameter TABLE_LEN, 
     parameter TAG_WIDTH, 
-	parameter GHR_LEN, 
 	parameter L1,
 	parameter GHR_LEN_HASHING
 ) (
@@ -590,7 +552,7 @@ module TABLE #(
 	input age,
 	input update_pred_counter, 
 	input update_u_counter,
-	input logic [GHR_LEN - 1 : 0] GHR, 
+	input logic [`GHR_LEN - 1 : 0] GHR, 
 	input reset_u_lsb,
 	input reset_u_msb, 
 
@@ -624,51 +586,60 @@ module TABLE #(
 
 	logic prev_prediction; 
 
-	hashing# (
-		.LEN_BITS_HASHING(GHR_LEN_HASHING),
-		.LEN_BITS_OUTPUT(INDEX_WIDTH), 
-		.SOURCE_LEN(GHR_LEN)
-	) GHR_HASH_INDEX (
-		.source(GHR), 
-		.hash(ghr_hash_index)
-	); 
 
-	hashing# (
-		.LEN_BITS_HASHING(`ADDR_WIDTH),
-		.LEN_BITS_OUTPUT(INDEX_WIDTH), 
-		.SOURCE_LEN(`ADDR_WIDTH)
-	) PC_HASH_INDEX (
-		.source(i_req_pc), 
-		.hash(pc_hash_index)
-	); 
+	always_ff @(posedge clk)
+	begin 
+		if (!rst_n) begin 
+			ghr_hash_index <= '0
+			ghr_hash_tag <= '0
+			ghr_hash_2_tag <= '0
+			pc_hash_index <= '0
+			pc_hash_tag <= '0
+		end
 
-	hashing# (
-		.LEN_BITS_HASHING(GHR_LEN_HASHING),
-		.LEN_BITS_OUTPUT(TAG_WIDTH), 
-		.SOURCE_LEN(GHR_LEN)
-	) GHR_HASH_TAG (
-		.source(GHR), 
-		.hash(ghr_hash_tag)
-	); 
+		else if (i_req_valid) begin 
+			if (GHR_LEN_HASHING % INDEX_WIDTH == 0) begin 
+				ghr_hash_index <= {ghr_hash_index[INDEX_WIDTH - 2 : 0], ghr_hash_index[INDEX_WIDTH - 1] ^ next_branch_controls.GHR[0] ^ GHR[GHR_LEN_HASHING - 1]}
+			end
+			else begin 
+				ghr_hash_index <= {ghr_hash_index[INDEX_WIDTH - 2 : 0], ghr_hash_index[INDEX_WIDTH - 1] ^ next_branch_controls.GHR[0]}	
+				ghr_hash_index[(GHR_LEN_HASHING % INDEX_WIDTH)] <= GHR[GHR_LEN_HASHING - 1] ^ ghr_hash_index[(GHR_LEN_HASHING % INDEX_WIDTH) - 1]
+			end
 
-	hashing# (
-		.LEN_BITS_HASHING(GHR_LEN_HASHING),
-		.LEN_BITS_OUTPUT(TAG_WIDTH - 1), 
-		.SOURCE_LEN(GHR_LEN)
-	) GHR_HASH_2_TAG (
-		.source(GHR), 
-		.hash(ghr_hash_2_tag)
-	); 
+			if (GHR_LEN_HASHING % TAG_WIDTH == 0) begin 
+				ghr_hash_tag <= {ghr_hash_tag[TAG_WIDTH - 2 : 0], ghr_hash_tag[TAG_WIDTH - 1] ^ next_branch_controls.GHR[0] ^ GHR[GHR_LEN_HASHING - 1]}
+			end
+			else begin 
+				ghr_hash_tag <= {ghr_hash_tag[TAG_WIDTH - 2 : 0], ghr_hash_tag[TAG_WIDTH - 1] ^ next_branch_controls.GHR[0]}	
+				ghr_hash_tag[(GHR_LEN_HASHING % TAG_WIDTH)] <= GHR[GHR_LEN_HASHING - 1] ^ ghr_hash_tag[(GHR_LEN_HASHING % TAG_WIDTH) - 1]
+			end
 
-	hashing# (
-		.LEN_BITS_HASHING(`ADDR_WIDTH),
-		.LEN_BITS_OUTPUT(TAG_WIDTH), 
-		.SOURCE_LEN(`ADDR_WIDTH)
-	) PC_HASH_TAG (
-		.source(i_req_pc), 
-		.hash(pc_hash_tag)
-	); 
+			if (GHR_LEN_HASHING % (TAG_WIDTH - 1) == 0) begin 
+				ghr_hash_2_tag <= {ghr_hash_2_tag[(TAG_WIDTH - 1) - 2 : 0], ghr_hash_2_tag[(TAG_WIDTH - 1) - 1] ^ next_branch_controls.GHR[0] ^ GHR[GHR_LEN_HASHING - 1]}
+			end
+			else begin 
+				ghr_hash_2_tag <= {ghr_hash_2_tag[(TAG_WIDTH - 1) - 2 : 0], ghr_hash_2_tag[(TAG_WIDTH - 1) - 1] ^ next_branch_controls.GHR[0]}	
+				ghr_hash_2_tag[(GHR_LEN_HASHING % (TAG_WIDTH - 1))] <= GHR[GHR_LEN_HASHING - 1] ^ ghr_hash_2_tag[(GHR_LEN_HASHING % (TAG_WIDTH - 1)) - 1]
+			end
 
+			if (`ADDR_WIDTH % INDEX_WIDTH == 0) begin 
+				pc_hash_index <= {pc_hash_index[INDEX_WIDTH - 2 : 0], pc_hash_index[INDEX_WIDTH - 1] ^ next_branch_controls.GHR[0] ^ GHR[`ADDR_WIDTH - 1]}
+			end
+			else begin 
+				pc_hash_index <= {pc_hash_index[INDEX_WIDTH - 2 : 0], pc_hash_index[INDEX_WIDTH - 1] ^ next_branch_controls.GHR[0]}	
+				pc_hash_index[(`ADDR_WIDTH % INDEX_WIDTH)] <= GHR[`ADDR_WIDTH - 1] ^ pc_hash_index[(`ADDR_WIDTH % INDEX_WIDTH) - 1]
+			end
+
+			if (`ADDR_WIDTH % TAG_WIDTH == 0) begin 
+				pc_hash_tag <= {pc_hash_tag[TAG_WIDTH - 2 : 0], pc_hash_tag[TAG_WIDTH - 1] ^ next_branch_controls.GHR[0] ^ GHR[`ADDR_WIDTH - 1]}
+			end
+			else begin 
+				pc_hash_tag <= {pc_hash_tag[TAG_WIDTH - 2 : 0], pc_hash_tag[TAG_WIDTH - 1] ^ next_branch_controls.GHR[0]}	
+				pc_hash_tag[(`ADDR_WIDTH % TAG_WIDTH)] <= GHR[`ADDR_WIDTH - 1] ^ pc_hash_tag[(`ADDR_WIDTH % TAG_WIDTH) - 1]
+			end
+		end
+	end
+	
 
 	always_comb 
 	begin : compute_index_and_tag
@@ -803,7 +774,7 @@ module TABLE #(
 	begin : update_useful_counters
 		if(~rst_n)
 		begin
-			u_counter <= '{default: 2'b00};	// Weakly taken
+			u_counter <= '{default: 2'b00};	
 		end
 		else
 		begin

@@ -3,12 +3,13 @@ interface branch_state_ifc ();
     logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] branch_id [`BRANCH_NUM]; 
     logic [`BRANCH_NUM - 1 : 0] valid; 
     logic [`PHYS_REG_NUM_INDEX - 1 : 0] free_head_pointer [`BRANCH_NUM]; 
+    logic [`GHR_LEN - 1 : 0] GHR [`BRANCH_NUM]; 
     logic [`PHYS_REG_NUM_INDEX - 1 : 0] rename_buffer [`BRANCH_NUM] [`REG_NUM]; 
     logic [`BRANCH_NUM_INDEX - 1 : 0] write_pointer;
     logic ds_valid [`BRANCH_NUM]; 
 
-	modport in (input valid, free_head_pointer, rename_buffer, write_pointer, branch_id, ds_valid);
-	modport out (output valid, free_head_pointer, rename_buffer, write_pointer, branch_id, ds_valid);
+	modport in (input valid, free_head_pointer, rename_buffer, GHR, write_pointer, branch_id, ds_valid);
+	modport out (output valid, free_head_pointer, rename_buffer, GHR, write_pointer, branch_id, ds_valid);
 endinterface
 
 interface misprediction_output_ifc (); 
@@ -35,6 +36,7 @@ module branch_misprediction  (
     load_queue_ifc.in curr_load_queue, 
     store_queue_ifc.in curr_store_queue, 
     commit_state_ifc.in curr_commit_state, 
+    branch_controls_ifc.in curr_branch_controls,
 
     rename_ifc.out misprediction_rename_state, 
     active_state_ifc.out misprediction_active_state, 
@@ -43,7 +45,7 @@ module branch_misprediction  (
     load_queue_ifc.out misprediction_load_queue, 
     store_queue_ifc.out misprediction_store_queue,
     branch_state_ifc.out misprediction_branch_state, 
-
+    branch_controls_ifc.out misprediction_branch_controls,
     misprediction_output_ifc.out misprediction_out
 );
 
@@ -143,7 +145,17 @@ module branch_misprediction  (
     end
 
 
+    always_comb
+    begin : handle_branch_controls
 
+        misprediction_branch_controls.GHR = curr_branch_controls.GHR; 
+
+        if (hazard_signal_in.branch_miss)
+        begin
+            misprediction_branch_controls.GHR = {curr_branch_state.GHR[misprediction_idx][`GHR_LEN - 1 : 1], !curr_branch_state.GHR[misprediction_idx][0]}; 
+        end
+
+    end
 
 
     always_comb

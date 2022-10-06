@@ -10,6 +10,15 @@
  */
 `include "mips_core.svh"
 
+interface branch_controls_ifc ();
+	logic [`GHR_LEN - 1 : 0] GHR; 
+
+	modport in  (input GHR);
+	modport out (output GHR);
+endinterface
+
+
+
 module branch_controller (
 	input clk,    // Clock
 	input rst_n,  // Synchronous reset active low
@@ -17,15 +26,17 @@ module branch_controller (
 	// Request
 	pc_ifc.in dec_pc,
 	branch_decoded_ifc.hazard dec_branch_decoded,
-
+	branch_controls_ifc.in curr_branch_controls, 
 	// Feedback
 	branch_result_ifc.in ex_branch_result
 );
 	logic request_prediction;
 
 	// Change the following line to switch predictor
-	back_taken_forw_not_taken PREDICTOR (
+	TAGE PREDICTOR (
 		.clk, .rst_n,
+
+		.curr_branch_controls,
 
 		.i_req_valid     (request_prediction),
 		.i_req_pc        (dec_pc.pc), 

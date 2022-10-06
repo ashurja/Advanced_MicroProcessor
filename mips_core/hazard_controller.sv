@@ -31,6 +31,8 @@ module hazard_controller (
 	input logic issue_hazard,
 	input logic front_pipeline_halt, 
 
+	branch_controls_ifc.in curr_branch_controls,
+
 	cache_output_ifc.in if_i_cache_output,
 	pc_ifc.in dec_pc,
 	branch_decoded_ifc.hazard dec_branch_decoded,
@@ -42,6 +44,7 @@ module hazard_controller (
 	hazard_control_ifc.out f2d_hc,
 	hazard_control_ifc.out d2i_hc,
 
+	branch_controls_ifc.out next_branch_controls, 
 	hazard_signals_ifc.out hazard_signal_out, 
 	// Load pc output
 	load_pc_ifc.out load_pc
@@ -49,6 +52,7 @@ module hazard_controller (
 
 	branch_controller BRANCH_CONTROLLER (
 		.clk, .rst_n,
+		.curr_branch_controls,
 		.dec_pc,
 		.dec_branch_decoded,
 		.ex_branch_result
@@ -81,6 +85,19 @@ module hazard_controller (
 		dc_miss = ~mem_done;
 	end
 
+	always_comb
+	begin
+		if (!rst_n) next_branch_controls.GHR = '0; 
+		else 
+		begin
+			next_branch_controls.GHR = curr_branch_controls.GHR; 
+		end
+
+		if (dec_branch_decoded.valid & ~dec_branch_decoded.is_jump & !decode_hazard)
+		begin
+			next_branch_controls.GHR = {curr_branch_controls.GHR[`GHR_LEN - 2 : 0], dec_branch_decoded.prediction}; 
+		end
+	end
 	// Control signals
 	logic if_stall, if_flush;
 	logic dec_stall, dec_flush;
