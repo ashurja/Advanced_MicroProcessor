@@ -14,6 +14,8 @@ module branch_controller (
 	input clk,    // Clock
 	input rst_n,  // Synchronous reset active low
 
+	input logic dec_stall, 
+	input logic ex_stall, 
 	// Request
 	pc_ifc.in dec_pc,
 	branch_decoded_ifc.hazard dec_branch_decoded,
@@ -25,9 +27,11 @@ module branch_controller (
 	logic request_prediction;
 
 	// Change the following line to switch predictor
-	back_taken_forw_not_taken PREDICTOR (
+	TAGE PREDICTOR (
 		.clk, .rst_n,
 
+		.dec_stall, 
+		.ex_stall, 
 		.i_req_valid     (request_prediction),
 		.i_req_pc        (dec_pc.pc),
 		.i_req_target    (dec_branch_decoded.target),

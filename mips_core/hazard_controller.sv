@@ -49,6 +49,8 @@ module hazard_controller (
 
 	branch_controller BRANCH_CONTROLLER (
 		.clk, .rst_n,
+		.dec_stall,
+		.ex_stall, 
 		.dec_pc,
 		.dec_branch_decoded,
 		.ex_pc,
@@ -224,7 +226,7 @@ module hazard_controller (
 		if (ic_miss && !inst_halt) stats_event("ic_miss");
 		if (ds_miss && !ds_halt) stats_event("ds_miss");
 		if (dec_overload && mem_done) stats_event("dec_overload");
-		if (ex_overload) stats_event("ex_overload");
+		if (ex_overload && !ex_stall) stats_event("ex_overload");
 		if (dc_miss && !mem_halt) stats_event("dc_miss");
 	end
 `endif
