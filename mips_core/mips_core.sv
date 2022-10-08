@@ -175,7 +175,6 @@ module mips_core (
 	axi_read_address mem_read_address[2]();
 	axi_read_data mem_read_data[2]();
 
-
 	// ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 	// |||| IF Stage
 	// ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -420,7 +419,7 @@ module mips_core (
 		.simulation_verification
 	); 
 
-	branch_misprediction BRANCH_MISPREDICTION (
+	branch_misprediction BRANCH_MISPREDICTION(
 		.rst_n,
 
 		.hazard_signal_in(hazard_signals),
@@ -446,6 +445,7 @@ module mips_core (
 		.misprediction_branch_controls,
 		.misprediction_out
 	); 
+
 
 	data_struct_update DATA_STRUCTURES_UPDATE (
 		.clk, 
@@ -509,6 +509,7 @@ module mips_core (
 		.front_pipeline_halt, 
 
 		.next_rename_state,
+		.misprediction_branch_controls, 
 		.curr_branch_controls,
 
 		.if_i_cache_output,

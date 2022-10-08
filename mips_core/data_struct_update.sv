@@ -130,6 +130,10 @@ module data_struct_update (
 
 		curr_branch_state.ds_valid <= next_branch_state.ds_valid; 
 		curr_branch_state.GHR <= next_branch_state.GHR; 
+		curr_branch_state.CSR_IDX <= next_branch_state.CSR_IDX; 
+		curr_branch_state.CSR_TAG <= next_branch_state.CSR_TAG; 
+		curr_branch_state.CSR_TAG_2 <= next_branch_state.CSR_TAG_2; 
+
 		curr_branch_state.free_head_pointer <= next_branch_state.free_head_pointer; 
 		curr_branch_state.rename_buffer <= next_branch_state.rename_buffer; 
 		curr_branch_state.branch_id <= next_branch_state.branch_id; 
@@ -143,12 +147,23 @@ module data_struct_update (
 		if (hazard_signal_in.branch_miss)
 		begin
 			curr_branch_controls.GHR <= misprediction_branch_controls.GHR;  
+			curr_branch_controls.CSR_IDX <= misprediction_branch_controls.CSR_IDX; 
+			curr_branch_controls.CSR_TAG <= misprediction_branch_controls.CSR_TAG; 
+			curr_branch_controls.CSR_TAG_2 <= misprediction_branch_controls.CSR_TAG_2; 
 		end
 
 		else 
 		begin
 			curr_branch_controls.GHR <= next_branch_controls.GHR; 
+
+			curr_branch_controls.CSR_IDX <= next_branch_controls.CSR_IDX; 
+			curr_branch_controls.CSR_TAG <= next_branch_controls.CSR_TAG; 
+			curr_branch_controls.CSR_TAG_2 <= next_branch_controls.CSR_TAG_2; 
 		end
+
+		curr_branch_controls.CSR_IDX_FEED <= next_branch_controls.CSR_IDX_FEED; 
+		curr_branch_controls.CSR_TAG_FEED <= next_branch_controls.CSR_TAG_FEED; 
+		curr_branch_controls.CSR_TAG_2_FEED <= next_branch_controls.CSR_TAG_2_FEED; 
 	end
 
 

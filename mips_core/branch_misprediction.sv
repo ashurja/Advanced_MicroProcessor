@@ -3,13 +3,19 @@ interface branch_state_ifc ();
     logic [`ACTIVE_LIST_SIZE_INDEX - 1 : 0] branch_id [`BRANCH_NUM]; 
     logic [`BRANCH_NUM - 1 : 0] valid; 
     logic [`PHYS_REG_NUM_INDEX - 1 : 0] free_head_pointer [`BRANCH_NUM]; 
-    logic [`GHR_LEN - 1 : 0] GHR [`BRANCH_NUM]; 
+
     logic [`PHYS_REG_NUM_INDEX - 1 : 0] rename_buffer [`BRANCH_NUM] [`REG_NUM]; 
     logic [`BRANCH_NUM_INDEX - 1 : 0] write_pointer;
     logic ds_valid [`BRANCH_NUM]; 
 
-	modport in (input valid, free_head_pointer, rename_buffer, GHR, write_pointer, branch_id, ds_valid);
-	modport out (output valid, free_head_pointer, rename_buffer, GHR, write_pointer, branch_id, ds_valid);
+    logic [`GHR_LEN - 1 : 0] GHR [`BRANCH_NUM]; 
+
+	logic [$clog2(`TAGE_TABLE_LEN) - 1 : 0] CSR_IDX [`BRANCH_NUM][`TAGE_TABLE_NUM - 1];
+	logic [`TAGE_TAG_WIDTH - 1 : 0] CSR_TAG [`BRANCH_NUM][`TAGE_TABLE_NUM - 1];
+	logic [`TAGE_TAG_WIDTH - 2 : 0] CSR_TAG_2 [`BRANCH_NUM][`TAGE_TABLE_NUM - 1];
+
+	modport in (input valid, free_head_pointer, rename_buffer, GHR, write_pointer, branch_id, ds_valid, CSR_IDX, CSR_TAG, CSR_TAG_2); 
+	modport out (output valid, free_head_pointer, rename_buffer, GHR, write_pointer, branch_id, ds_valid, CSR_IDX, CSR_TAG, CSR_TAG_2); 
 endinterface
 
 interface misprediction_output_ifc (); 
@@ -21,7 +27,7 @@ interface misprediction_output_ifc ();
     modport out (output invalidate_d_cache_output, branch_id_with_ds, color_bit_with_ds); 
 endinterface
 
-module branch_misprediction  (
+module branch_misprediction (
     input rst_n,
 
     hazard_signals_ifc.in hazard_signal_in,
@@ -144,14 +150,38 @@ module branch_misprediction  (
         end
     end
 
-
+    logic [`BRANCH_NUM_INDEX - 1 : 0] tage_feed_idx; 
     always_comb
     begin : handle_branch_controls
-
+        tage_feed_idx = '0; 
         misprediction_branch_controls.GHR = curr_branch_controls.GHR; 
+
+        misprediction_branch_controls.CSR_IDX = curr_branch_controls.CSR_IDX; 
+        misprediction_branch_controls.CSR_TAG = curr_branch_controls.CSR_TAG; 
+        misprediction_branch_controls.CSR_TAG_2 = curr_branch_controls.CSR_TAG_2; 
+
+        misprediction_branch_controls.CSR_IDX_FEED = curr_branch_controls.CSR_IDX_FEED; 
+        misprediction_branch_controls.CSR_TAG_FEED = curr_branch_controls.CSR_TAG_FEED; 
+        misprediction_branch_controls.CSR_TAG_2_FEED = curr_branch_controls.CSR_TAG_2_FEED; 
 
         if (hazard_signal_in.branch_miss)
         begin
+
+            if (misprediction_idx == 0) 
+                tage_feed_idx = `BRANCH_NUM - 1; 
+            else 
+                tage_feed_idx = misprediction_idx - 1; 
+
+            for (int i = 0; i < `TAGE_TABLE_NUM - 1; i++) begin 
+                misprediction_branch_controls.CSR_IDX[i] = {curr_branch_state.CSR_IDX[misprediction_idx][i][$clog2(`TAGE_TABLE_LEN) - 1 : 1], !curr_branch_state.CSR_IDX[misprediction_idx][i][0]}; 
+                misprediction_branch_controls.CSR_TAG[i] = {curr_branch_state.CSR_TAG[misprediction_idx][i][`TAGE_TAG_WIDTH - 1 : 1], !curr_branch_state.CSR_TAG[misprediction_idx][i][0]};  
+                misprediction_branch_controls.CSR_TAG_2[i] = {curr_branch_state.CSR_TAG_2[misprediction_idx][i][`TAGE_TAG_WIDTH - 2 : 1], !curr_branch_state.CSR_TAG_2[misprediction_idx][i][0]};
+
+                misprediction_branch_controls.CSR_IDX_FEED[i] = curr_branch_state.CSR_IDX[tage_feed_idx][i]; 
+                misprediction_branch_controls.CSR_TAG_FEED[i] = curr_branch_state.CSR_TAG[tage_feed_idx][i];  
+                misprediction_branch_controls.CSR_TAG_2_FEED[i] = curr_branch_state.CSR_TAG_2[tage_feed_idx][i];
+            end
+
             misprediction_branch_controls.GHR = {curr_branch_state.GHR[misprediction_idx][`GHR_LEN - 1 : 1], !curr_branch_state.GHR[misprediction_idx][0]}; 
         end
 

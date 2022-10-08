@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Tue Jun 21 20:02:36 2022
+[*] Sat Oct  8 19:04:36 2022
 [*]
-[dumpfile] "/Users/jamshedashurov/Desktop/CSE148/CSE148/baseline/mips_cpu/simx.fst"
-[dumpfile_mtime] "Tue Jun 21 19:45:58 2022"
-[dumpfile_size] 314467
-[savefile] "/Users/jamshedashurov/Desktop/CSE148/CSE148/baseline/mips_cpu/esift2.gtkw"
-[timestart] 532616
+[dumpfile] "/Users/jamshedashurov/Desktop/CSE148/baseline/Advanced_MicroProcessor/simx.fst"
+[dumpfile_mtime] "Sat Oct  8 18:35:37 2022"
+[dumpfile_size] 219609829
+[savefile] "/Users/jamshedashurov/Desktop/CSE148/baseline/Advanced_MicroProcessor/esift2.gtkw"
+[timestart] 445886
 [size] 2025 1284
-[pos] 1715 -1
-*-5.000000 532706 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[pos] 1714 -1
+*-8.000000 26249 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.mips_core.
 [treeopen] TOP.mips_core.AGU.
@@ -17,6 +17,11 @@
 [treeopen] TOP.mips_core.DECODER.
 [treeopen] TOP.mips_core.FETCH_UNIT.
 [treeopen] TOP.mips_core.FETCH_UNIT.o_pc_current.
+[treeopen] TOP.mips_core.HAZARD_CONTROLLER.
+[treeopen] TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.
+[treeopen] TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.
+[treeopen] TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].
+[treeopen] TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[4].
 [treeopen] TOP.mips_core.ISSUE.
 [treeopen] TOP.mips_core.LOAD_STORE_QUEUE.
 [treeopen] TOP.mips_core.MEM_GLUE.
@@ -26,7 +31,7 @@
 [sst_width] 236
 [signals_width] 398
 [sst_expanded] 1
-[sst_vpaned_height] 891
+[sst_vpaned_height] 401
 @200
 -Fetch
 @22
@@ -60,12 +65,6 @@ TOP.mips_core.DECODER.out.uses_rt
 TOP.mips_core.DECODER.out.uses_rw
 @200
 -
-@24
-TOP.mips_core.COMMIT.curr_active_state.youngest_inst_pointer[5:0]
-TOP.mips_core.COMMIT.curr_commit_state.oldest_inst_pointer[5:0]
-TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_rename_state.free_head_pointer[5:0]
-TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_commit_state.free_tail_pointer[5:0]
-TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_active_state.global_color_bit
 @22
 TOP.mips_core.LOAD_STORE_QUEUE.curr_rename_state.m_reg_file_valid_bit[63:0]
 TOP.mips_core.COMMIT.next_rename_state.m_reg_file_valid_bit[63:0]
@@ -73,27 +72,45 @@ TOP.mips_core.COMMIT.next_rename_state.m_reg_file_valid_bit[63:0]
 TOP.mips_core.REG_FILE.phys_rw[5:0]
 @200
 -
-@24
-TOP.mips_core.DATA_STRCUTURES_UPDATE.hazard_signal_in.branch_miss
 @28
-TOP.mips_core.HAZARD_CONTROLLER.issue_queue_full
 TOP.mips_core.HAZARD_CONTROLLER.dec_stall
 TOP.mips_core.HAZARD_CONTROLLER.if_flush
 TOP.mips_core.HAZARD_CONTROLLER.issue_stall
 TOP.mips_core.HAZARD_CONTROLLER.dec_overload
-@24
-TOP.mips_core.DATA_STRCUTURES_UPDATE.hazard_signal_in.color_bit
-@28
 TOP.mips_core.HAZARD_CONTROLLER.ic_miss
 TOP.mips_core.HAZARD_CONTROLLER.if_stall
 TOP.mips_core.HAZARD_CONTROLLER.if_flush
-@24
-TOP.mips_core.DATA_STRCUTURES_UPDATE.hazard_signal_in.dc_miss
-@28
 TOP.mips_core.COMMIT.curr_rename_state.branch_decoded_hazard
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].component.i_fb_valid
+TOP.mips_core.HAZARD_CONTROLLER.ex_overload
+@100000028
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].component.i_fb_outcome
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].component.i_fb_prediction
+@200
+-
+@22
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].component.GHR[255:0]
+@28
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].component.i_req_valid
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].component.CSR_IDX[8:0]
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].component.CSR_TAG[10:0]
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].component.CSR_TAG_2[9:0]
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].component.CSR_IDX_FEED[8:0]
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].component.CSR_TAG_2_FEED[9:0]
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].component.CSR_TAG_FEED[10:0]
 @200
 -
 -
+@28
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[4].component.CSR_IDX[8:0]
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[4].component.CSR_TAG[10:0]
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[4].component.CSR_TAG_2[9:0]
+@29
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[4].component.CSR_IDX_FEED[8:0]
+@28
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[4].component.CSR_TAG_2_FEED[9:0]
+TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[4].component.CSR_TAG_FEED[10:0]
+@200
 -
 -Issue Queue in 
 @28
@@ -133,7 +150,6 @@ TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[29][5:0]
 TOP.mips_core.REG_FILE.ds_miss
 @24
 TOP.mips_core.REG_FILE.active_list_hazard
-TOP.mips_core.REG_FILE.branch_hazard
 TOP.mips_core.REG_FILE.free_list_hazard
 TOP.mips_core.REG_FILE.load_store_hazard
 TOP.mips_core.REG_FILE.reg_jump_hazard
@@ -157,38 +173,22 @@ TOP.mips_core.COMMIT.num_branches
 TOP.mips_core.COMMIT.num_loads
 TOP.mips_core.COMMIT.num_stores
 TOP.mips_core.COMMIT.num_writes
-@28
-TOP.mips_core.COMMIT.o_commit_out.branch_valid[1:0]
-TOP.mips_core.COMMIT.o_commit_out.load_valid[1:0]
-TOP.mips_core.COMMIT.o_commit_out.store_valid[1:0]
-TOP.mips_core.COMMIT.o_commit_out.reclaim_valid[1:0]
 @200
 -
+-
 -Simulation Verification
-@28
-TOP.mips_core.COMMIT.simulation_verification.valid[1:0]
 @22
 TOP.mips_core.COMMIT.simulation_verification.data[0][31:0]
 TOP.mips_core.COMMIT.simulation_verification.data[1][31:0]
-@28
-TOP.mips_core.COMMIT.simulation_verification.is_load[1:0]
-TOP.mips_core.COMMIT.simulation_verification.is_store[1:0]
-@22
 TOP.mips_core.COMMIT.simulation_verification.mem_addr[0][25:0]
-@23
 TOP.mips_core.COMMIT.simulation_verification.mem_addr[1][25:0]
-@22
 TOP.mips_core.COMMIT.simulation_verification.pc[0][25:0]
 TOP.mips_core.COMMIT.simulation_verification.pc[1][25:0]
 TOP.mips_core.COMMIT.simulation_verification.rw_addr[0][4:0]
 TOP.mips_core.COMMIT.simulation_verification.rw_addr[1][4:0]
-@28
-TOP.mips_core.COMMIT.simulation_verification.uses_rw[1:0]
 @200
 -
 @24
-TOP.mips_core.DATA_STRCUTURES_UPDATE.hazard_signal_in.branch_miss
-TOP.mips_core.DATA_STRCUTURES_UPDATE.curr_rename_state.free_head_pointer[5:0]
 TOP.mips_core.REG_FILE.phys_rw[5:0]
 TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[0][5:0]
 TOP.mips_core.COMMIT.curr_rename_state.rename_buffer[1][5:0]

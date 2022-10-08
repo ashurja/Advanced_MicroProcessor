@@ -18,4 +18,7 @@
 `define COMMIT_WINDOW_SIZE_INDEX (`COMMIT_WINDOW_SIZE == 1 ? 1 : $clog2(`COMMIT_WINDOW_SIZE))
 `define ISSUE_SIZE 2
 `define GHR_LEN 256
+`define TAGE_TABLE_NUM 8
+`define TAGE_TABLE_LEN 512
+`define TAGE_TAG_WIDTH 11
 import mips_core_pkg::*;
