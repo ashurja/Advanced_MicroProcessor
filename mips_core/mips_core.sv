@@ -253,6 +253,7 @@ module mips_core (
 	d_cache D_CACHE (
 		.clk, .rst_n,
 
+		.pc_in(e2m_pc), 
 		.in(e2m_d_cache_input),
 		.out(mem_d_cache_output),
 
