@@ -277,6 +277,7 @@ module load_store_queue (
             o_d_cache_input.addr = next_store_queue.mem_addr[d_cache_read_pointer]; 
             o_d_cache_input.addr_next = next_store_queue.mem_addr[d_cache_read_pointer]; 
             o_d_cache_input.data = next_store_queue.sw_data[d_cache_read_pointer]; 
+            o_d_cache_input.pc = curr_active_state.pc[next_store_queue.active_list_id[d_cache_read_pointer]]; 
 
             o_d_cache_controls.valid = next_store_queue.valid[d_cache_read_pointer] & !misprediction_store_queue.entry_available_bit[d_cache_read_pointer];
             o_d_cache_controls.mem_action = WRITE;
@@ -294,6 +295,7 @@ module load_store_queue (
             o_d_cache_input.addr = next_load_queue.mem_addr[d_cache_read_pointer]; 
             o_d_cache_input.addr_next = next_load_queue.mem_addr[d_cache_read_pointer]; 
             o_d_cache_input.data = '0; 
+            o_d_cache_input.pc = curr_active_state.pc[next_load_queue.active_list_id[d_cache_read_pointer]]; 
 
             o_d_cache_controls.valid = load_dispatch_match & !halt_load & !misprediction_load_queue.entry_available_bit[d_cache_read_pointer];
             o_d_cache_controls.mem_action = READ; 
