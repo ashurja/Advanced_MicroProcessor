@@ -19,6 +19,6 @@
 `define ISSUE_SIZE 2
 `define GHR_LEN 256
 `define TAGE_TABLE_NUM 8
-`define TAGE_TABLE_LEN 512
+`define TAGE_TABLE_LEN 1024
 `define TAGE_TAG_WIDTH 11
 import mips_core_pkg::*;
