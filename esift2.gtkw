@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Fri Oct  7 16:26:34 2022
+[*] Wed Oct 12 02:32:03 2022
 [*]
 [dumpfile] "/Users/jamshedashurov/Desktop/CSE148/baseline/Advanced_MicroProcessor/simx.fst"
-[dumpfile_mtime] "Fri Oct  7 16:09:22 2022"
-[dumpfile_size] 255476457
+[dumpfile_mtime] "Wed Oct 12 02:22:25 2022"
+[dumpfile_size] 216345374
 [savefile] "/Users/jamshedashurov/Desktop/CSE148/baseline/Advanced_MicroProcessor/esift2.gtkw"
-[timestart] 0
+[timestart] 67140
 [size] 2025 1284
-[pos] 1625 -1
-*-8.000000 6867698 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[pos] 1624 -1
+*-9.000000 13889 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.mips_core.
 [treeopen] TOP.mips_core.DECODER.
@@ -28,7 +28,7 @@
 [sst_width] 426
 [signals_width] 385
 [sst_expanded] 1
-[sst_vpaned_height] 757
+[sst_vpaned_height] 1048
 @200
 -Fetch
 @22
@@ -75,66 +75,66 @@ TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.GHR[255:0]
 @200
 -
 -T0
-@22
+@28
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].component.ghr_hash_index[9:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].component.ghr_hash_tag[7:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].component.ghr_hash_2_tag[6:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].component.i_tag[7:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[0].component.i_index[9:0]
-@200
+@208
 -
 -T1
-@22
+@28
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[1].component.ghr_hash_index[9:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[1].component.ghr_hash_tag[7:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[1].component.ghr_hash_2_tag[6:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[1].component.i_tag[7:0]
+@29
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[1].component.i_index[9:0]
-@200
+@208
 -
 -T2
-@22
+@28
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[2].component.ghr_hash_index[8:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[2].component.ghr_hash_tag[7:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[2].component.ghr_hash_2_tag[6:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[2].component.i_tag[7:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[2].component.i_index[8:0]
-@200
+@208
 -
 -T3
-@22
+@28
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[3].component.ghr_hash_index[8:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[3].component.ghr_hash_tag[7:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[3].component.ghr_hash_2_tag[6:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[3].component.i_tag[7:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[3].component.i_index[8:0]
-@200
+@208
 -
 -T4
-@22
+@28
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[4].component.ghr_hash_index[8:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[4].component.ghr_hash_tag[11:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[4].component.ghr_hash_2_tag[10:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[4].component.i_tag[11:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[4].component.i_index[8:0]
-@200
+@208
 -
 -T5
-@22
+@28
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[5].component.ghr_hash_index[8:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[5].component.ghr_hash_tag[11:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[5].component.ghr_hash_2_tag[10:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[5].component.i_tag[11:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[5].component.i_index[8:0]
-@200
+@208
 -
 -T6
-@22
+@28
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[6].component.ghr_hash_index[8:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[6].component.ghr_hash_tag[11:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[6].component.ghr_hash_2_tag[10:0]
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[6].component.i_tag[11:0]
-@23
 TOP.mips_core.HAZARD_CONTROLLER.BRANCH_CONTROLLER.PREDICTOR.tables[6].component.i_index[8:0]
 [pattern_trace] 1
 [pattern_trace] 0
