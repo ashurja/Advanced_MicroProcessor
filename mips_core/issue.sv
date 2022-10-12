@@ -96,6 +96,7 @@ module issue (
     input rst_n, 
     input logic front_pipeline_halt, 
 
+    branch_controls_ifc.in next_branch_controls,
     issue_input_ifc.in issue_in,
 	memory_issue_queue_ifc.in curr_mem_queue,
 	integer_issue_queue_ifc.in curr_int_queue,
@@ -192,11 +193,16 @@ module issue (
 
             for (int i = 0; i < `BRANCH_NUM; i++)
 			begin
-				next_branch_state.rename_buffer[i] = '{default: 0}; 
+                next_branch_state.CSR_IDX[i] = '{default: {($clog2(`TAGE_TABLE_LEN)){1'b1}}};
+                next_branch_state.CSR_TAG[i] = '{default: {(`TAGE_TAG_WIDTH){1'b1}}};  
+                next_branch_state.CSR_TAG_2[i] = '{default: {(`TAGE_TAG_WIDTH - 1){1'b1}}};  
+
+                next_branch_state.rename_buffer[i] = '{default: 0}; 
 			end
 
 			next_branch_state.write_pointer = '0; 
 			next_branch_state.valid = '0; 
+            next_branch_state.GHR = '{default: 0}; 
 			next_branch_state.free_head_pointer = '{default: 0}; 
 			next_branch_state.branch_id = '{default: 0}; 
             next_branch_state.ds_valid = '{default: 0};
@@ -229,6 +235,10 @@ module issue (
         begin
 			next_branch_state.write_pointer = curr_branch_state.write_pointer; 
 			next_branch_state.valid = curr_branch_state.valid; 
+            next_branch_state.GHR = curr_branch_state.GHR; 
+            next_branch_state.CSR_IDX = curr_branch_state.CSR_IDX; 
+            next_branch_state.CSR_TAG = curr_branch_state.CSR_TAG; 
+            next_branch_state.CSR_TAG_2 = curr_branch_state.CSR_TAG_2; 
 			next_branch_state.free_head_pointer = curr_branch_state.free_head_pointer; 
 			next_branch_state.rename_buffer = curr_branch_state.rename_buffer; 
 			next_branch_state.branch_id = curr_branch_state.branch_id; 
@@ -302,6 +312,10 @@ module issue (
 				next_branch_state.valid[curr_branch_state.write_pointer] = 1'b1; 
                 next_branch_state.free_head_pointer[curr_branch_state.write_pointer] = curr_rename_state.free_head_pointer; 
                 next_branch_state.rename_buffer[curr_branch_state.write_pointer] = curr_rename_state.rename_buffer;
+                next_branch_state.GHR[curr_branch_state.write_pointer] = next_branch_controls.GHR; 
+                next_branch_state.CSR_IDX[curr_branch_state.write_pointer] = next_branch_controls.CSR_IDX; 
+                next_branch_state.CSR_TAG[curr_branch_state.write_pointer] = next_branch_controls.CSR_TAG; 
+                next_branch_state.CSR_TAG_2[curr_branch_state.write_pointer] = next_branch_controls.CSR_TAG_2; 
                 next_branch_state.branch_id[curr_branch_state.write_pointer] = issue_in.active_list_id[0]; 
                 next_branch_state.ds_valid[curr_branch_state.write_pointer] = issue_in.valid[1]; 
                 next_branch_state.write_pointer = curr_branch_state.write_pointer + 1'b1; 	

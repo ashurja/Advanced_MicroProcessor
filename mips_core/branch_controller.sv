@@ -10,6 +10,23 @@
  */
 `include "mips_core.svh"
 
+interface branch_controls_ifc ();
+	logic [`GHR_LEN - 1 : 0] GHR; 
+
+	logic [$clog2(`TAGE_TABLE_LEN) - 1 : 0] CSR_IDX [`TAGE_TABLE_NUM - 1];
+	logic [`TAGE_TAG_WIDTH - 1 : 0] CSR_TAG [`TAGE_TABLE_NUM - 1];
+	logic [`TAGE_TAG_WIDTH - 2 : 0] CSR_TAG_2 [`TAGE_TABLE_NUM - 1];
+
+	logic [$clog2(`TAGE_TABLE_LEN) - 1 : 0] CSR_IDX_FEED [`TAGE_TABLE_NUM - 1];
+	logic [`TAGE_TAG_WIDTH - 1 : 0] CSR_TAG_FEED [`TAGE_TABLE_NUM - 1];
+	logic [`TAGE_TAG_WIDTH - 2 : 0] CSR_TAG_2_FEED [`TAGE_TABLE_NUM - 1];
+
+	modport in  (input GHR, CSR_IDX, CSR_TAG, CSR_TAG_2, CSR_IDX_FEED, CSR_TAG_FEED, CSR_TAG_2_FEED);
+	modport out (output GHR, CSR_IDX, CSR_TAG, CSR_TAG_2, CSR_IDX_FEED, CSR_TAG_FEED, CSR_TAG_2_FEED);
+endinterface
+
+
+
 module branch_controller (
 	input clk,    // Clock
 	input rst_n,  // Synchronous reset active low
@@ -17,16 +34,19 @@ module branch_controller (
 	// Request
 	pc_ifc.in dec_pc,
 	branch_decoded_ifc.hazard dec_branch_decoded,
-
+	branch_controls_ifc.in curr_branch_controls, 
+	branch_controls_ifc.in misprediction_branch_controls, 
 	// Feedback
 	branch_result_ifc.in ex_branch_result
 );
 	logic request_prediction;
 
 	// Change the following line to switch predictor
-	back_taken_forw_not_taken PREDICTOR (
+	TAGE PREDICTOR(
 		.clk, .rst_n,
 
+		.curr_branch_controls,
+		.misprediction_branch_controls, 
 		.i_req_valid     (request_prediction),
 		.i_req_pc        (dec_pc.pc), 
 		.i_req_target    (dec_branch_decoded.target),

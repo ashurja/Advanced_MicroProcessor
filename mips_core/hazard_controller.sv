@@ -21,7 +21,7 @@ import "DPI-C" function void stats_event (input string e);
 `endif
 
 
-module hazard_controller (
+module hazard_controller(
 	input clk,    // Clock
 	input rst_n,  // Synchronous reset active low
 
@@ -31,6 +31,8 @@ module hazard_controller (
 	input logic issue_hazard,
 	input logic front_pipeline_halt, 
 
+	branch_controls_ifc.in curr_branch_controls,
+	branch_controls_ifc.in misprediction_branch_controls,
 	cache_output_ifc.in if_i_cache_output,
 	pc_ifc.in dec_pc,
 	branch_decoded_ifc.hazard dec_branch_decoded,
@@ -42,18 +44,23 @@ module hazard_controller (
 	hazard_control_ifc.out f2d_hc,
 	hazard_control_ifc.out d2i_hc,
 
+	branch_controls_ifc.out next_branch_controls, 
 	hazard_signals_ifc.out hazard_signal_out, 
 	// Load pc output
 	load_pc_ifc.out load_pc
 );
 
-	branch_controller BRANCH_CONTROLLER (
+	branch_controller BRANCH_CONTROLLER(
 		.clk, .rst_n,
+		.curr_branch_controls,
+		.misprediction_branch_controls, 
 		.dec_pc,
 		.dec_branch_decoded,
 		.ex_branch_result
 	);
-
+	localparam L1 = 4;
+	localparam alpha = 2;
+	localparam int TAGE_G_SEQ [`TAGE_TABLE_NUM - 1] = '{L1 * (alpha** 0), L1 * (alpha** 1) + 1, L1 * (alpha** 2), L1 * (alpha** 3) + 1, L1 * (alpha** 4), L1 * (alpha** 5) + 1, L1 * (alpha** 6)}; 
 	//Profiling
 	logic is_branch; 
 
@@ -81,6 +88,66 @@ module hazard_controller (
 		dc_miss = ~mem_done;
 	end
 
+	always_comb
+	begin
+		if (!rst_n) begin 
+			next_branch_controls.GHR = '0; 
+
+            for (int i = 0; i < `TAGE_TABLE_NUM - 1; i++) begin 
+                next_branch_controls.CSR_IDX[i] = {($clog2(`TAGE_TABLE_LEN)){1'b1}}; 
+                next_branch_controls.CSR_TAG[i] = {(`TAGE_TAG_WIDTH){1'b1}};  
+                next_branch_controls.CSR_TAG_2[i] = {(`TAGE_TAG_WIDTH - 1){1'b1}}; 
+
+				next_branch_controls.CSR_IDX_FEED[i] = {($clog2(`TAGE_TABLE_LEN)){1'b1}}; 
+                next_branch_controls.CSR_TAG_FEED[i] = {(`TAGE_TAG_WIDTH){1'b1}};  
+                next_branch_controls.CSR_TAG_2_FEED[i] = {(`TAGE_TAG_WIDTH - 1){1'b1}}; 
+            end
+		end
+		else 
+		begin
+			next_branch_controls.GHR = curr_branch_controls.GHR; 
+
+			next_branch_controls.CSR_IDX = curr_branch_controls.CSR_IDX; 
+			next_branch_controls.CSR_TAG = curr_branch_controls.CSR_TAG; 
+			next_branch_controls.CSR_TAG_2 = curr_branch_controls.CSR_TAG_2; 
+
+			next_branch_controls.CSR_IDX_FEED = curr_branch_controls.CSR_IDX_FEED; 
+			next_branch_controls.CSR_TAG_FEED = curr_branch_controls.CSR_TAG_FEED; 
+			next_branch_controls.CSR_TAG_2_FEED = curr_branch_controls.CSR_TAG_2_FEED; 
+		end
+
+		if (dec_branch_decoded.valid & ~dec_branch_decoded.is_jump & !decode_hazard)
+		begin
+			next_branch_controls.GHR = {curr_branch_controls.GHR[`GHR_LEN - 2 : 0], dec_branch_decoded.prediction}; 
+
+			for (int i = 0; i < `TAGE_TABLE_NUM - 1; i++) begin 
+
+				if (TAGE_G_SEQ[i] % $clog2(`TAGE_TABLE_LEN) == 0) begin 
+					next_branch_controls.CSR_IDX[i] = {curr_branch_controls.CSR_IDX[i][$clog2(`TAGE_TABLE_LEN) - 2 : 0], curr_branch_controls.CSR_IDX[i][$clog2(`TAGE_TABLE_LEN) - 1] ^ dec_branch_decoded.prediction ^ curr_branch_controls.GHR[TAGE_G_SEQ[i] - 1]};
+				end
+				else begin 
+					next_branch_controls.CSR_IDX[i] = {curr_branch_controls.CSR_IDX[i][$clog2(`TAGE_TABLE_LEN) - 2 : 0], curr_branch_controls.CSR_IDX[i][$clog2(`TAGE_TABLE_LEN) - 1] ^ dec_branch_decoded.prediction};
+					next_branch_controls.CSR_IDX[i][(TAGE_G_SEQ[i] % $clog2(`TAGE_TABLE_LEN))] = curr_branch_controls.GHR[TAGE_G_SEQ[i] - 1] ^ curr_branch_controls.CSR_IDX[i][(TAGE_G_SEQ[i] % $clog2(`TAGE_TABLE_LEN)) - 1];
+				end
+
+				if (TAGE_G_SEQ[i] % `TAGE_TAG_WIDTH == 0) begin 
+					next_branch_controls.CSR_TAG[i] = {curr_branch_controls.CSR_TAG[i][`TAGE_TAG_WIDTH - 2 : 0], curr_branch_controls.CSR_TAG[i][`TAGE_TAG_WIDTH - 1] ^ dec_branch_decoded.prediction ^ curr_branch_controls.GHR[TAGE_G_SEQ[i] - 1]};
+				end
+				else begin 
+					next_branch_controls.CSR_TAG[i] = {curr_branch_controls.CSR_TAG[i][`TAGE_TAG_WIDTH - 2 : 0], curr_branch_controls.CSR_TAG[i][`TAGE_TAG_WIDTH - 1] ^ dec_branch_decoded.prediction};
+					next_branch_controls.CSR_TAG[i][(TAGE_G_SEQ[i] % `TAGE_TAG_WIDTH)] = curr_branch_controls.GHR[TAGE_G_SEQ[i] - 1] ^ curr_branch_controls.CSR_TAG[i][(TAGE_G_SEQ[i] % `TAGE_TAG_WIDTH) - 1];
+				end
+
+				if (TAGE_G_SEQ[i] % (`TAGE_TAG_WIDTH - 1) == 0) begin 
+					next_branch_controls.CSR_TAG_2[i] = {curr_branch_controls.CSR_TAG_2[i][(`TAGE_TAG_WIDTH - 1) - 2 : 0], curr_branch_controls.CSR_TAG_2[i][(`TAGE_TAG_WIDTH - 1) - 1] ^ dec_branch_decoded.prediction ^ curr_branch_controls.GHR[TAGE_G_SEQ[i] - 1]};
+				end
+				else begin 
+					next_branch_controls.CSR_TAG_2[i] = {curr_branch_controls.CSR_TAG_2[i][(`TAGE_TAG_WIDTH - 1) - 2 : 0], curr_branch_controls.CSR_TAG_2[i][(`TAGE_TAG_WIDTH - 1) - 1] ^ dec_branch_decoded.prediction};	
+					next_branch_controls.CSR_TAG_2[i][(TAGE_G_SEQ[i] % (`TAGE_TAG_WIDTH - 1))] = curr_branch_controls.GHR[TAGE_G_SEQ[i] - 1] ^ curr_branch_controls.CSR_TAG_2[i][(TAGE_G_SEQ[i] % (`TAGE_TAG_WIDTH - 1)) - 1];
+				end
+			end
+		end
+	end
 	// Control signals
 	logic if_stall, if_flush;
 	logic dec_stall, dec_flush;

@@ -132,6 +132,7 @@ module mips_core (
 	load_queue_ifc misprediction_load_queue(); 
 	store_queue_ifc misprediction_store_queue(); 
 	branch_state_ifc misprediction_branch_state(); 
+	branch_controls_ifc misprediction_branch_controls();
 	misprediction_output_ifc misprediction_out(); 
 	// xxxx Hazard control
 
@@ -143,6 +144,9 @@ module mips_core (
 	logic invalidate_d_cache_output; 
 
 	logic front_pipeline_halt; 
+
+	branch_controls_ifc curr_branch_controls(); 
+	branch_controls_ifc next_branch_controls(); 
 
 	branch_state_ifc curr_branch_state(); 
 	branch_state_ifc next_branch_state(); 
@@ -170,7 +174,6 @@ module mips_core (
 	axi_write_response mem_write_response[1]();
 	axi_read_address mem_read_address[2]();
 	axi_read_data mem_read_data[2]();
-
 
 	// ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 	// |||| IF Stage
@@ -275,6 +278,7 @@ module mips_core (
 		.clk, .rst_n,
 		.front_pipeline_halt, 
 
+		.next_branch_controls,
 		.issue_in(issue_input),
 		.curr_mem_queue,
 		.curr_int_queue,
@@ -415,7 +419,7 @@ module mips_core (
 		.simulation_verification
 	); 
 
-	branch_misprediction BRANCH_MISPREDICTION (
+	branch_misprediction BRANCH_MISPREDICTION(
 		.rst_n,
 
 		.hazard_signal_in(hazard_signals),
@@ -429,6 +433,7 @@ module mips_core (
 		.curr_load_queue, 
 		.curr_store_queue, 
 		.curr_commit_state, 
+		.curr_branch_controls,
 
 		.misprediction_rename_state, 
 		.misprediction_active_state, 
@@ -437,10 +442,12 @@ module mips_core (
 		.misprediction_load_queue, 
 		.misprediction_store_queue, 
 		.misprediction_branch_state, 
+		.misprediction_branch_controls,
 		.misprediction_out
 	); 
 
-	data_struct_update DATA_STRCUTURES_UPDATE (
+
+	data_struct_update DATA_STRUCTURES_UPDATE (
 		.clk, 
 		.rst_n, 
 
@@ -461,6 +468,7 @@ module mips_core (
 		.next_branch_state, 
 		.next_load_queue, 
 		.next_store_queue, 
+		.next_branch_controls,
 
 		.misprediction_rename_state, 
 		.misprediction_active_state, 
@@ -469,6 +477,7 @@ module mips_core (
 		.misprediction_load_queue, 
 		.misprediction_store_queue, 
 		.misprediction_branch_state, 
+		.misprediction_branch_controls,
 
 		.buffered_issue_state,
 		.curr_rename_state, 
@@ -476,7 +485,8 @@ module mips_core (
 		.curr_commit_state, 
 		.curr_int_queue, 
 		.curr_mem_queue,
-		.curr_branch_state, 
+		.curr_branch_state,
+		.curr_branch_controls, 
 		.curr_load_queue, 
 		.curr_store_queue 
 	); 
@@ -499,12 +509,15 @@ module mips_core (
 		.front_pipeline_halt, 
 
 		.next_rename_state,
+		.misprediction_branch_controls, 
+		.curr_branch_controls,
 
 		.if_i_cache_output,
 		.dec_pc(f2d_pc),
 		.dec_branch_decoded,
 		.ex_branch_result,
 
+		.next_branch_controls,
 		.hazard_signal_out(hazard_signals), 
 		.f2f_hc,
 		.f2d_hc,

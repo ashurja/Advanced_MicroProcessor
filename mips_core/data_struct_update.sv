@@ -21,6 +21,7 @@ module data_struct_update (
 	branch_state_ifc.in next_branch_state, 
 	load_queue_ifc.in next_load_queue, 
 	store_queue_ifc.in next_store_queue,
+	branch_controls_ifc.in next_branch_controls,
 
 	rename_ifc.in misprediction_rename_state, 
 	active_state_ifc.in misprediction_active_state, 
@@ -29,6 +30,7 @@ module data_struct_update (
 	load_queue_ifc.in misprediction_load_queue, 
 	store_queue_ifc.in misprediction_store_queue, 
 	branch_state_ifc.in misprediction_branch_state, 
+	branch_controls_ifc.in misprediction_branch_controls,
 
 	issue_input_ifc.out buffered_issue_state, 
     rename_ifc.out curr_rename_state, 
@@ -37,6 +39,7 @@ module data_struct_update (
     integer_issue_queue_ifc.out curr_int_queue, 
     memory_issue_queue_ifc.out curr_mem_queue,
 	branch_state_ifc.out curr_branch_state,
+	branch_controls_ifc.out curr_branch_controls,
 	load_queue_ifc.out curr_load_queue, 
 	store_queue_ifc.out curr_store_queue
 );
@@ -118,25 +121,50 @@ module data_struct_update (
 		if (hazard_signal_in.branch_miss)
 		begin
 			curr_branch_state.write_pointer <= misprediction_branch_state.write_pointer; 
-
-			curr_branch_state.ds_valid <= next_branch_state.ds_valid; 
-			curr_branch_state.free_head_pointer <= next_branch_state.free_head_pointer; 
-			curr_branch_state.rename_buffer <= next_branch_state.rename_buffer; 
-			curr_branch_state.branch_id <= next_branch_state.branch_id; 
 		end
 
 		else 
 		begin
 			curr_branch_state.write_pointer <= next_branch_state.write_pointer; 
-			curr_branch_state.free_head_pointer <= next_branch_state.free_head_pointer; 
-			curr_branch_state.rename_buffer <= next_branch_state.rename_buffer; 
-			curr_branch_state.branch_id <= next_branch_state.branch_id; 
-			curr_branch_state.ds_valid <= next_branch_state.ds_valid; 
 		end
+
+		curr_branch_state.ds_valid <= next_branch_state.ds_valid; 
+		curr_branch_state.GHR <= next_branch_state.GHR; 
+		curr_branch_state.CSR_IDX <= next_branch_state.CSR_IDX; 
+		curr_branch_state.CSR_TAG <= next_branch_state.CSR_TAG; 
+		curr_branch_state.CSR_TAG_2 <= next_branch_state.CSR_TAG_2; 
+
+		curr_branch_state.free_head_pointer <= next_branch_state.free_head_pointer; 
+		curr_branch_state.rename_buffer <= next_branch_state.rename_buffer; 
+		curr_branch_state.branch_id <= next_branch_state.branch_id; 
 
 		curr_branch_state.valid = branch_next_valid; 
 	end
 
+	always_ff @(posedge clk)
+	begin : UPDATE_BRANCH_CONTROLS
+
+		if (hazard_signal_in.branch_miss)
+		begin
+			curr_branch_controls.GHR <= misprediction_branch_controls.GHR;  
+			curr_branch_controls.CSR_IDX <= misprediction_branch_controls.CSR_IDX; 
+			curr_branch_controls.CSR_TAG <= misprediction_branch_controls.CSR_TAG; 
+			curr_branch_controls.CSR_TAG_2 <= misprediction_branch_controls.CSR_TAG_2; 
+		end
+
+		else 
+		begin
+			curr_branch_controls.GHR <= next_branch_controls.GHR; 
+
+			curr_branch_controls.CSR_IDX <= next_branch_controls.CSR_IDX; 
+			curr_branch_controls.CSR_TAG <= next_branch_controls.CSR_TAG; 
+			curr_branch_controls.CSR_TAG_2 <= next_branch_controls.CSR_TAG_2; 
+		end
+
+		curr_branch_controls.CSR_IDX_FEED <= next_branch_controls.CSR_IDX_FEED; 
+		curr_branch_controls.CSR_TAG_FEED <= next_branch_controls.CSR_TAG_FEED; 
+		curr_branch_controls.CSR_TAG_2_FEED <= next_branch_controls.CSR_TAG_2_FEED; 
+	end
 
 
 	always_ff @(posedge clk) 

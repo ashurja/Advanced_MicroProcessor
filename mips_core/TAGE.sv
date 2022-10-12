@@ -1,8 +1,11 @@
-module TAGE (
+module TAGE  (
 	input clk,    // Clock
 	input rst_n,  // Synchronous reset active low
-    
+
 	// Request
+	branch_controls_ifc.in curr_branch_controls,
+	branch_controls_ifc.in misprediction_branch_controls, 
+
 	input logic i_req_valid,
 	input logic [`ADDR_WIDTH - 1 : 0] i_req_pc,
 	input logic [`ADDR_WIDTH - 1 : 0] i_req_target,
@@ -14,40 +17,24 @@ module TAGE (
 	input mips_core_pkg::BranchOutcome i_fb_prediction,
 	input mips_core_pkg::BranchOutcome i_fb_outcome
 );
-	localparam NUM_TABLES = 9; 
-	localparam INDEX_WIDTH_TABLES = (NUM_TABLES > 1) ? $clog2(NUM_TABLES) : 1; 
-
-	localparam TAG_WIDTH_SMALL = 8; 
-	localparam TAG_WIDTH_BIG = 12; 
-
-	localparam alpha = 2; 
-	localparam L1 = 2;
-
-	localparam T1_LEN = 512; 
-	localparam T2_LEN = 512; 
-	localparam T3_LEN = 512; 
-	localparam T4_LEN = 512; 
-	localparam T5_LEN = 512; 
-	localparam T6_LEN = 512; 
-	localparam T7_LEN = 512; 
-	localparam T8_LEN = 512; 
-
+	localparam INDEX_WIDTH_TABLES = (`TAGE_TABLE_NUM > 1) ? $clog2(`TAGE_TABLE_NUM) : 1; 
 	localparam BASE_LEN = 4096; 
-	localparam GHR_LEN = 256; 
 
-	logic [NUM_TABLES - 1 : 0] curr_u_bits_from_all_t; 
-	logic [NUM_TABLES - 1 : 0] prev_u_bits_from_all_t; 
-	logic [NUM_TABLES - 1 : 0] curr_hits_from_all_t; 
-	logic [NUM_TABLES - 1 : 0] curr_alt_hits_from_all_t; 
-	logic [NUM_TABLES - 1 : 0] curr_pred_from_all_t; 
-	logic [NUM_TABLES - 1 : 0] prev_pred_from_all_t; 
+    logic fb_valid; 
 
-	logic [NUM_TABLES - 1 : 0] table_search_for_evict; 
-	logic [NUM_TABLES - 1 : 0] tables_with_evict_slots; 
-	logic [NUM_TABLES - 1 : 0] select_t_for_evict; 
-	logic [NUM_TABLES - 1 : 0] select_t_for_age; 
-	logic [NUM_TABLES - 1 : 0] update_u_counters; 
-	logic [NUM_TABLES - 1 : 0] update_prediction_counters; 
+	logic [`TAGE_TABLE_NUM - 1 : 0] curr_u_bits_from_all_t; 
+	logic [`TAGE_TABLE_NUM - 1 : 0] prev_u_bits_from_all_t; 
+	logic [`TAGE_TABLE_NUM - 1 : 0] curr_hits_from_all_t; 
+	logic [`TAGE_TABLE_NUM - 1 : 0] curr_alt_hits_from_all_t; 
+	logic [`TAGE_TABLE_NUM - 1 : 0] curr_pred_from_all_t; 
+	logic [`TAGE_TABLE_NUM - 1 : 0] prev_pred_from_all_t; 
+
+	logic [`TAGE_TABLE_NUM - 1 : 0] table_search_for_evict; 
+	logic [`TAGE_TABLE_NUM - 1 : 0] tables_with_evict_slots; 
+	logic [`TAGE_TABLE_NUM - 1 : 0] select_t_for_evict; 
+	logic [`TAGE_TABLE_NUM - 1 : 0] select_t_for_age; 
+	logic [`TAGE_TABLE_NUM - 1 : 0] update_u_counters; 
+	logic [`TAGE_TABLE_NUM - 1 : 0] update_prediction_counters; 
 
 	logic [INDEX_WIDTH_TABLES - 1 : 0] curr_t_index_for_pred; 
 	logic [INDEX_WIDTH_TABLES - 1 : 0] prev_t_index_for_pred; 
@@ -57,10 +44,6 @@ module TAGE (
 
 	logic eviction_index_found; 
 	logic [`ADDR_WIDTH - 1 : 0] i_req_prev_pc; 
-	logic GHR_MSB; 
-
-	logic [GHR_LEN - 1 : 0] next_GHR; 
-	logic [GHR_LEN - 1 : 0] GHR; 
 
 	logic reset_u_counters; 
 	logic [17 : 0] counter_for_u_reset; 
@@ -70,12 +53,11 @@ module TAGE (
 	logic reset_u_msb; 
 
 	always_comb begin : setup
-		next_GHR = GHR; 
+        fb_valid = i_fb_valid; 
 		reset_u_counters = 1'b0; 
 		reset_u_lsb = 1'b0; 
 		reset_u_msb = 1'b0; 
 
-		if (i_fb_valid && (i_fb_outcome != i_fb_prediction)) next_GHR[0] = i_fb_outcome; 
 		if (counter_for_u_reset == 256000)
 		begin
 			reset_u_counters = 1'b1;
@@ -94,254 +76,52 @@ module TAGE (
 		.i_req_pc, 
 		.i_req_target, 
 		.o_req_prediction(curr_pred_from_all_t[0]), 
-		.i_fb_valid, 
+		.i_fb_valid(fb_valid), 
 		.i_fb_pc, 
 		.i_fb_prediction, 
 		.i_fb_outcome
 	); 
 
-	TABLE# (
-		.TABLE_LEN(T1_LEN),
-		.TAG_WIDTH(TAG_WIDTH_SMALL), 
-		.GHR_LEN, 
-		.L1, 
-		.GHR_LEN_HASHING(L1)
-	) T1 (
-		.clk,
-		.rst_n,
-		.i_req_valid, 
-		.i_req_pc, 
-		.i_req_target, 
-		.i_fb_valid, 
-		.i_fb_pc, 
-		.i_fb_prediction, 
-		.i_fb_outcome,
-		.reset_u_lsb, 
-		.reset_u_msb,
-		.table_select_evict(table_search_for_evict[1]),
-		.evict(select_t_for_evict[1]),
-		.age(select_t_for_age[1]),
-		.update_u_counter(update_u_counters[1]),
-		.update_pred_counter(update_prediction_counters[1]),
-		.GHR(next_GHR),
-		.prediction(curr_pred_from_all_t[1]),
-		.hit(curr_hits_from_all_t[1]), 
-		.u_bit(curr_u_bits_from_all_t[1]),
-		.eviction_possible(tables_with_evict_slots[1])
-	); 
+	genvar g;
+	generate
+		for (g = 0; g < `TAGE_TABLE_NUM - 1; g++)
+		begin : tables
+            TABLE# (
+                .TABLE_LEN(`TAGE_TABLE_LEN),
+                .TAG_WIDTH(`TAGE_TAG_WIDTH)
+            ) component (
+                .clk,
+                .rst_n,
+                .i_req_valid, 
+                .i_req_pc, 
+                .i_req_target, 
+                .i_fb_valid(fb_valid), 
+                .i_fb_pc, 
+                .i_fb_prediction, 
+                .i_fb_outcome,
+                .final_prediction(o_req_prediction),
+                .reset_u_lsb, 
+                .reset_u_msb,
+                .table_select_evict(table_search_for_evict[g + 1]),
+                .evict(select_t_for_evict[g + 1]),
+                .age(select_t_for_age[g + 1]),
+                .update_u_counter(update_u_counters[g + 1]),
+                .update_pred_counter(update_prediction_counters[g + 1]),
+				.CSR_IDX(curr_branch_controls.CSR_IDX[g]), 
+				.CSR_TAG(curr_branch_controls.CSR_TAG[g]), 
+				.CSR_TAG_2(curr_branch_controls.CSR_TAG_2[g]),
 
-
-	TABLE# (
-		.TABLE_LEN(T2_LEN),
-		.TAG_WIDTH(TAG_WIDTH_SMALL), 
-		.GHR_LEN, 
-		.L1, 
-		.GHR_LEN_HASHING(L1 * alpha)
-	) T2 (
-		.clk,
-		.rst_n,
-		.i_req_valid, 
-		.i_req_pc, 
-		.i_req_target, 
-		.i_fb_valid, 
-		.i_fb_pc, 
-		.i_fb_prediction, 
-		.i_fb_outcome,
-		.reset_u_lsb, 
-		.reset_u_msb,
-		.table_select_evict(table_search_for_evict[2]),
-		.evict(select_t_for_evict[2]),
-		.age(select_t_for_age[2]),
-		.update_u_counter(update_u_counters[2]),
-		.update_pred_counter(update_prediction_counters[2]),
-		.GHR(next_GHR),
-		.prediction(curr_pred_from_all_t[2]),
-		.hit(curr_hits_from_all_t[2]), 
-		.u_bit(curr_u_bits_from_all_t[2]),
-		.eviction_possible(tables_with_evict_slots[2])
-	); 
-
-	TABLE# (
-		.TABLE_LEN(T3_LEN),
-		.TAG_WIDTH(TAG_WIDTH_SMALL), 
-		.GHR_LEN, 
-		.L1, 
-		.GHR_LEN_HASHING(L1 * (alpha ** 2))
-	) T3 (
-		.clk,
-		.rst_n,
-		.i_req_valid, 
-		.i_req_pc, 
-		.i_req_target, 
-		.i_fb_valid, 
-		.i_fb_pc, 
-		.i_fb_prediction, 
-		.i_fb_outcome,
-		.reset_u_lsb, 
-		.reset_u_msb,
-		.table_select_evict(table_search_for_evict[3]),
-		.evict(select_t_for_evict[3]),
-		.age(select_t_for_age[3]),
-		.update_u_counter(update_u_counters[3]),
-		.update_pred_counter(update_prediction_counters[3]),
-		.GHR(next_GHR),
-		.prediction(curr_pred_from_all_t[3]),
-		.hit(curr_hits_from_all_t[3]), 
-		.u_bit(curr_u_bits_from_all_t[3]),
-		.eviction_possible(tables_with_evict_slots[3])
-	); 
-
-	TABLE# (
-		.TABLE_LEN(T4_LEN),
-		.TAG_WIDTH(TAG_WIDTH_SMALL), 
-		.GHR_LEN, 
-		.L1, 
-		.GHR_LEN_HASHING(L1 * (alpha ** 3))
-	) T4 (
-		.clk,
-		.rst_n,
-		.i_req_valid, 
-		.i_req_pc, 
-		.i_req_target, 
-		.i_fb_valid, 
-		.i_fb_pc, 
-		.i_fb_prediction, 
-		.i_fb_outcome,
-		.reset_u_lsb, 
-		.reset_u_msb,
-		.table_select_evict(table_search_for_evict[4]),
-		.evict(select_t_for_evict[4]),
-		.age(select_t_for_age[4]),
-		.update_u_counter(update_u_counters[4]),
-		.update_pred_counter(update_prediction_counters[4]),
-		.GHR(next_GHR),
-		.prediction(curr_pred_from_all_t[4]),
-		.hit(curr_hits_from_all_t[4]), 
-		.u_bit(curr_u_bits_from_all_t[4]),
-		.eviction_possible(tables_with_evict_slots[4])
-	); 
-
-	TABLE# (
-		.TABLE_LEN(T5_LEN),
-		.TAG_WIDTH(TAG_WIDTH_SMALL), 
-		.GHR_LEN, 
-		.L1, 
-		.GHR_LEN_HASHING(L1 * (alpha ** 4))
-	) T5 (
-		.clk,
-		.rst_n,
-		.i_req_valid, 
-		.i_req_pc, 
-		.i_req_target, 
-		.i_fb_valid, 
-		.i_fb_pc, 
-		.i_fb_prediction, 
-		.i_fb_outcome,
-		.reset_u_lsb, 
-		.reset_u_msb,
-		.table_select_evict(table_search_for_evict[5]),
-		.evict(select_t_for_evict[5]),
-		.age(select_t_for_age[5]),
-		.update_u_counter(update_u_counters[5]),
-		.update_pred_counter(update_prediction_counters[5]),
-		.GHR(next_GHR),
-		.prediction(curr_pred_from_all_t[5]),
-		.hit(curr_hits_from_all_t[5]), 
-		.u_bit(curr_u_bits_from_all_t[5]),
-		.eviction_possible(tables_with_evict_slots[5])
-	); 
-
-	TABLE# (
-		.TABLE_LEN(T6_LEN),
-		.TAG_WIDTH(TAG_WIDTH_BIG), 
-		.GHR_LEN, 
-		.L1, 
-		.GHR_LEN_HASHING(L1 * (alpha ** 5))
-	) T6 (
-		.clk,
-		.rst_n,
-		.i_req_valid, 
-		.i_req_pc, 
-		.i_req_target, 
-		.i_fb_valid, 
-		.i_fb_pc, 
-		.i_fb_prediction, 
-		.i_fb_outcome,
-		.reset_u_lsb, 
-		.reset_u_msb,
-		.table_select_evict(table_search_for_evict[6]),
-		.evict(select_t_for_evict[6]),
-		.age(select_t_for_age[6]),
-		.update_u_counter(update_u_counters[6]),
-		.update_pred_counter(update_prediction_counters[6]),
-		.GHR(next_GHR),
-		.prediction(curr_pred_from_all_t[6]),
-		.hit(curr_hits_from_all_t[6]), 
-		.u_bit(curr_u_bits_from_all_t[6]),
-		.eviction_possible(tables_with_evict_slots[6])
-	); 
-
-
-	TABLE# (
-		.TABLE_LEN(T7_LEN),
-		.TAG_WIDTH(TAG_WIDTH_BIG), 
-		.GHR_LEN, 
-		.L1, 
-		.GHR_LEN_HASHING(L1 * (alpha ** 6))
-	) T7 (
-		.clk,
-		.rst_n,
-		.i_req_valid, 
-		.i_req_pc, 
-		.i_req_target, 
-		.i_fb_valid, 
-		.i_fb_pc, 
-		.i_fb_prediction, 
-		.i_fb_outcome,
-		.reset_u_lsb, 
-		.reset_u_msb,
-		.table_select_evict(table_search_for_evict[7]),
-		.evict(select_t_for_evict[7]),
-		.age(select_t_for_age[7]),
-		.update_u_counter(update_u_counters[7]),
-		.update_pred_counter(update_prediction_counters[7]),
-		.GHR(next_GHR),
-		.prediction(curr_pred_from_all_t[7]),
-		.hit(curr_hits_from_all_t[7]), 
-		.u_bit(curr_u_bits_from_all_t[7]),
-		.eviction_possible(tables_with_evict_slots[7])
-	); 
-
-
-	TABLE# (
-		.TABLE_LEN(T8_LEN),
-		.TAG_WIDTH(TAG_WIDTH_BIG), 
-		.GHR_LEN, 
-		.L1, 
-		.GHR_LEN_HASHING(L1 * (alpha ** 7))
-	) T8 (
-		.clk,
-		.rst_n,
-		.i_req_valid, 
-		.i_req_pc, 
-		.i_req_target, 
-		.i_fb_valid, 
-		.i_fb_pc, 
-		.i_fb_prediction, 
-		.i_fb_outcome,
-		.reset_u_lsb, 
-		.reset_u_msb,
-		.table_select_evict(table_search_for_evict[8]),
-		.evict(select_t_for_evict[8]),
-		.age(select_t_for_age[8]),
-		.update_u_counter(update_u_counters[8]),
-		.update_pred_counter(update_prediction_counters[8]),
-		.GHR(next_GHR),
-		.prediction(curr_pred_from_all_t[8]),
-		.hit(curr_hits_from_all_t[8]), 
-		.u_bit(curr_u_bits_from_all_t[8]),
-		.eviction_possible(tables_with_evict_slots[8])
-	); 
+				.CSR_IDX_FEED(misprediction_branch_controls.CSR_IDX_FEED[g]), 
+				.CSR_TAG_FEED(misprediction_branch_controls.CSR_TAG_FEED[g]), 
+				.CSR_TAG_2_FEED(misprediction_branch_controls.CSR_TAG_2_FEED[g]),
+                .GHR(curr_branch_controls.GHR),
+                .prediction(curr_pred_from_all_t[g + 1]),
+                .hit(curr_hits_from_all_t[g + 1]), 
+                .u_bit(curr_u_bits_from_all_t[g + 1]),
+                .eviction_possible(tables_with_evict_slots[g + 1])
+            ); 
+		end
+	endgenerate
 
 
 	always_comb
@@ -356,7 +136,7 @@ module TAGE (
 	end
 
 	priority_encoder# (
-		.m(NUM_TABLES),
+		.m(`TAGE_TABLE_NUM),
 		.n(INDEX_WIDTH_TABLES)
 	) pred_index_retriever (
 		.x(curr_hits_from_all_t),
@@ -372,7 +152,7 @@ module TAGE (
 	end
 
 	priority_encoder# (
-		.m(NUM_TABLES),
+		.m(`TAGE_TABLE_NUM),
 		.n(INDEX_WIDTH_TABLES)
 	) altpred_index_retriever (
 		.x(curr_alt_hits_from_all_t),
@@ -397,17 +177,17 @@ module TAGE (
 	always_comb
 	begin : look_for_table_to_evict
 		table_search_for_evict = 0; 
-		if (i_fb_valid && (i_fb_prediction != i_fb_outcome))
+		if (fb_valid && (i_fb_prediction != i_fb_outcome))
 		begin
-			for (int i = prev_t_index_for_pred + 1; i < NUM_TABLES; i++)
+			for (int i = 0; i < `TAGE_TABLE_NUM - prev_t_index_for_pred + 1; i++)
 			begin
-				table_search_for_evict[i] = 1'b1; 
+				table_search_for_evict[prev_t_index_for_pred + 1 + i] = 1'b1; 
 			end
 		end
 	end
 
 	priority_encoder# (
-		.m(NUM_TABLES),
+		.m(`TAGE_TABLE_NUM),
 		.n(INDEX_WIDTH_TABLES)
 	) evict_index_retriever (
 		.x(tables_with_evict_slots),
@@ -423,7 +203,7 @@ module TAGE (
 		update_u_counters = 0; 
 		update_prediction_counters = 0; 
 
-		if (i_fb_valid && (i_fb_prediction != i_fb_outcome))
+		if (fb_valid && (i_fb_prediction != i_fb_outcome))
 		begin
 			if (eviction_index_found)	
 			begin
@@ -432,14 +212,14 @@ module TAGE (
 
 			else 
 			begin
-				for (int i = prev_t_index_for_pred + 1; i < NUM_TABLES; i++)
+				for (int i = 0; i < `TAGE_TABLE_NUM - prev_t_index_for_pred + 1; i++)
 				begin
-					select_t_for_age[i] = 1'b1; 
+					select_t_for_age[prev_t_index_for_pred + 1 + i] = 1'b1; 
 				end
 			end
 		end
 		
-		if (i_fb_valid)
+		if (fb_valid)
 		begin
 			update_prediction_counters[prev_t_index_for_pred] = 1'b1; 
 			if (!prev_u_bits_from_all_t[prev_t_index_for_pred])
@@ -448,7 +228,7 @@ module TAGE (
 			end
 		end
 
-		if (i_fb_valid)
+		if (fb_valid)
 		begin
 			if (i_fb_prediction != prev_pred_from_all_t[prev_t_index_for_alt_pred])
 			begin
@@ -477,29 +257,6 @@ module TAGE (
 		end
 	end
 
-	always_ff @(posedge clk)
-	begin : update_GHR
-		if (!rst_n)
-		begin
-			GHR <= 0; 
-		end
-		else 
-		begin
-			if (i_req_valid && (i_req_pc != i_req_prev_pc)) 
-			begin
-				for (int i = 1; i < GHR_LEN; i++)
-				begin
-					 GHR[i] <= next_GHR[i - 1]; 
-				end
-				GHR[0] <= o_req_prediction; 
-				
-			end
-			else if (i_fb_valid)
-			begin
-				GHR <= next_GHR; 
-			end
-		end
-	end
 
 	always_ff @(posedge clk) 
 	begin : resets
@@ -526,7 +283,7 @@ module TAGE (
 	`ifdef SIMULATION
 		always_ff @(posedge clk)
 		begin
-			if (i_fb_valid)
+			if (fb_valid)
 			begin
 				if (i_fb_prediction != i_fb_outcome) 
 				begin
@@ -566,10 +323,7 @@ endmodule
 
 module TABLE #(
     parameter TABLE_LEN, 
-    parameter TAG_WIDTH, 
-	parameter GHR_LEN, 
-	parameter L1,
-	parameter GHR_LEN_HASHING
+    parameter TAG_WIDTH
 ) (
 	input clk,    // Clock
 	input rst_n,  // Synchronous reset active low
@@ -585,12 +339,22 @@ module TABLE #(
 	input mips_core_pkg::BranchOutcome i_fb_prediction,
 	input mips_core_pkg::BranchOutcome i_fb_outcome,
 
+    input mips_core_pkg::BranchOutcome final_prediction, 
+
+	input logic [INDEX_WIDTH - 1 : 0] CSR_IDX, 
+	input logic [TAG_WIDTH - 1 : 0] CSR_TAG, 
+	input logic [TAG_WIDTH -2 : 0] CSR_TAG_2, 
+
+	input logic [INDEX_WIDTH - 1 : 0] CSR_IDX_FEED, 
+	input logic [TAG_WIDTH - 1 : 0] CSR_TAG_FEED, 
+	input logic [TAG_WIDTH -2 : 0] CSR_TAG_2_FEED, 
+
 	input table_select_evict,
 	input evict, 
 	input age,
 	input update_pred_counter, 
 	input update_u_counter,
-	input logic [GHR_LEN - 1 : 0] GHR, 
+	input logic [`GHR_LEN - 1 : 0] GHR, 
 	input reset_u_lsb,
 	input reset_u_msb, 
 
@@ -606,12 +370,6 @@ module TABLE #(
 	logic [TAG_WIDTH - 1 : 0] update_tag; 
 	logic [TAG_WIDTH - 1 : 0] i_tag; 
 
-	logic [INDEX_WIDTH - 1 : 0] ghr_hash_index;
-	logic [INDEX_WIDTH - 1 : 0] pc_hash_index;
-	logic [TAG_WIDTH - 1 : 0] ghr_hash_tag; 
-	logic [TAG_WIDTH - 2 : 0] ghr_hash_2_tag; 
-	logic [TAG_WIDTH - 1 : 0] pc_hash_tag; 
-
     logic [2 : 0] prediction_counter [TABLE_LEN]; 
     logic [1 : 0] u_counter [TABLE_LEN]; 
 	logic [1 : 0] u_counter_next [TABLE_LEN]; 
@@ -621,64 +379,23 @@ module TABLE #(
 	logic [INDEX_WIDTH - 1 : 0] i_index;
 	logic [INDEX_WIDTH - 1 : 0] update_index; 
 	logic [INDEX_WIDTH - 1 : 0] evict_index; 
-
-	logic prev_prediction; 
-
-	hashing# (
-		.LEN_BITS_HASHING(GHR_LEN_HASHING),
-		.LEN_BITS_OUTPUT(INDEX_WIDTH), 
-		.SOURCE_LEN(GHR_LEN)
-	) GHR_HASH_INDEX (
-		.source(GHR), 
-		.hash(ghr_hash_index)
-	); 
-
-	hashing# (
-		.LEN_BITS_HASHING(`ADDR_WIDTH),
-		.LEN_BITS_OUTPUT(INDEX_WIDTH), 
-		.SOURCE_LEN(`ADDR_WIDTH)
-	) PC_HASH_INDEX (
-		.source(i_req_pc), 
-		.hash(pc_hash_index)
-	); 
-
-	hashing# (
-		.LEN_BITS_HASHING(GHR_LEN_HASHING),
-		.LEN_BITS_OUTPUT(TAG_WIDTH), 
-		.SOURCE_LEN(GHR_LEN)
-	) GHR_HASH_TAG (
-		.source(GHR), 
-		.hash(ghr_hash_tag)
-	); 
-
-	hashing# (
-		.LEN_BITS_HASHING(GHR_LEN_HASHING),
-		.LEN_BITS_OUTPUT(TAG_WIDTH - 1), 
-		.SOURCE_LEN(GHR_LEN)
-	) GHR_HASH_2_TAG (
-		.source(GHR), 
-		.hash(ghr_hash_2_tag)
-	); 
-
-	hashing# (
-		.LEN_BITS_HASHING(`ADDR_WIDTH),
-		.LEN_BITS_OUTPUT(TAG_WIDTH), 
-		.SOURCE_LEN(`ADDR_WIDTH)
-	) PC_HASH_TAG (
-		.source(i_req_pc), 
-		.hash(pc_hash_tag)
-	); 
-
-
+	
 	always_comb 
 	begin : compute_index_and_tag
 		i_tag = 0; 
 		i_index = 0; 
 		if (i_req_valid)
 		begin
-			i_tag = ghr_hash_tag ^ pc_hash_tag ^ (ghr_hash_2_tag << 1); 
-			i_index = ghr_hash_index ^ pc_hash_index; 
+			i_tag = CSR_TAG ^ i_fb_pc[TAG_WIDTH - 1 : 0] ^ {1'b0,CSR_TAG_2}; 
+			i_index = CSR_IDX ^ i_fb_pc[INDEX_WIDTH - 1 : 0] ^ i_fb_pc[INDEX_WIDTH * 2 - 1 : INDEX_WIDTH]; 
 		end
+	end
+
+	always_comb
+	begin 
+		update_index = CSR_IDX_FEED ^ i_fb_pc[INDEX_WIDTH - 1 : 0] ^ i_fb_pc[INDEX_WIDTH * 2 - 1 : INDEX_WIDTH]; 
+		evict_index = update_index; 
+		update_tag = CSR_TAG_FEED ^ i_fb_pc[TAG_WIDTH - 1 : 0] ^ {1'b0,CSR_TAG_2_FEED}; 
 	end
 
 	always_comb
@@ -744,26 +461,6 @@ module TABLE #(
 	end
 
 	always_ff @(posedge clk)
-	begin : save_curr_states
-		if (!rst_n) 
-		begin
-			update_index <= 0; 
-			update_tag <= 0; 
-			evict_index <= 0; 
-			prev_prediction <= 1'b0; 
-		end
-
-		else 
-		begin
-			evict_index <= i_index; 
-			update_index <= i_index; 
-			update_tag <= i_tag; 
-			prev_prediction <= prediction; 
-		end
-	end 
-	
-
-	always_ff @(posedge clk)
 	begin : update_prediction_counters
 		if(~rst_n)
 		begin
@@ -803,7 +500,7 @@ module TABLE #(
 	begin : update_useful_counters
 		if(~rst_n)
 		begin
-			u_counter <= '{default: 2'b00};	// Weakly taken
+			u_counter <= '{default: 2'b00};	
 		end
 		else
 		begin
